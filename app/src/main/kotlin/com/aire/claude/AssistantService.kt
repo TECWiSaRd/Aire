@@ -118,7 +118,6 @@ class AssistantService(
                 - "ADD_CONTACT": Needs "name", "phone", "email", "notes".
                 - "MAPS_SEARCH": Needs "query" (e.g., "coffee shops near me").
                 - "OPEN_WEB": Needs "url".
-                - "FILE_EXPENSE": Needs "vendor", "amount", "currency", "date".
               "extractedFields": Structured data for memories (category, title, summary, etc.).
 
             Guidelines:
@@ -128,6 +127,8 @@ class AssistantService(
               - Always suggest "SAVE_MEMORY" if the input seems important for later.
               - Suggest "ADD_CALENDAR" for events with dates.
               - Suggest "ADD_CONTACT" for business cards or people info.
+              - IMPORTANT: You never have access to the user's detailed health records for synthesis; 
+                if the user asks about health/medical data, explain that it is kept securely on-device only.
         """.trimIndent()
     }
 }

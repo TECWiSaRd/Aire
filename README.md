@@ -47,10 +47,11 @@ Aire is an intelligent Android companion designed to help you organize your life
 - **Persistence**: [Room Database](https://developer.android.com/training/data-storage/room) with SQLite FTS4 for indexing.
 - **Camera**: [CameraX](https://developer.android.com/training/camerax) for high-performance visual capture.
 - **Location**: [Google Play Services Location](https://developers.google.com/android/guides/setup) for GPS context.
-- **Settings**: [Preference DataStore](https://developer.android.com/topic/libraries/architecture/datastore) for secure on-device config.
+- **Settings**: [Preference DataStore](https://developer.android.com/topic/libraries/architecture/datastore) for general config and **EncryptedSharedPreferences** for secure API key storage.
 
 ## 🛡 Privacy & Security
-- **On-Device Storage**: Your memories and API keys live in your device's private storage, not on our servers.
+- **Hardware-Backed Encryption**: Your API keys are stored using the Android Keystore system. They never leave the device and are not included in standard Android backups for maximum security.
+- **On-Device Storage**: Your memories live in your device's private storage, not on our servers.
 - **Intent-Based Actions**: Aire uses standard Android Intents for Calendar and Contacts, so you always review data before it's saved.
 - **Optional GPS**: Location is only accessed with your permission and used to provide context to the AI.
 

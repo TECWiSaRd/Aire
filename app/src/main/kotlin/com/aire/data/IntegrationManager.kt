@@ -81,6 +81,10 @@ class IntegrationManager(private val context: Context) {
 
     private fun launchWebBrowser(url: String?) {
         val uri = url?.toUri() ?: return
+        if (uri.scheme != "http" && uri.scheme != "https") {
+            Log.w("IntegrationManager", "Blocked attempt to open non-web URL: $url")
+            return
+        }
         val intent = Intent(Intent.ACTION_VIEW, uri).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK
         }

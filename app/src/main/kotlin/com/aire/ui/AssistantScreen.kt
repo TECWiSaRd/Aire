@@ -52,13 +52,15 @@ fun AssistantScreen(viewModel: MemoryViewModel) {
         }
     }
 
-    LaunchedEffect(Unit) {
-        locationPermission.launch(
-            arrayOf(
-                android.Manifest.permission.ACCESS_FINE_LOCATION,
-                android.Manifest.permission.ACCESS_COARSE_LOCATION
+    LaunchedEffect(ui.locationFeaturesEnabled) {
+        if (ui.locationFeaturesEnabled) {
+            locationPermission.launch(
+                arrayOf(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                )
             )
-        )
+        }
     }
 
     LaunchedEffect(ui.chatHistory.size) {

@@ -17,7 +17,7 @@ Aire is a modern AI Assistant tailored for Android (Pixel-first) that acts as an
 ### 2. Processing Layer (Assistant Brain)
 - **AssistantService**: A unified AI pipeline using **Claude (Sonnet 4.6, Haiku, or Opus)**.
 - **Multimodal Extraction**: Claude simultaneously explains visual inputs, answers natural language questions, and extracts structured data for memories or actions.
-- **On-Device Configuration**: Secure storage of API keys (Anthropic & Google) using **Preference DataStore**, with a dynamic model switcher in Settings.
+- **On-Device Configuration**: Secure storage of API keys (Anthropic & Google) using **EncryptedSharedPreferences** (Hardware-backed), with a dynamic model switcher in Settings.
 
 ### 3. Recall & Integration Layer
 - **Memory Vault**: Persistent **Room** database with **Full Text Search (FTS4)**. Records are automatically indexed by title, summary, tags, and **Location**.

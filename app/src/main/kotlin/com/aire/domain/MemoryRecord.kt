@@ -46,15 +46,25 @@ data class MemoryRecord(
 ) {
     /**
      * A token-efficient version of the record for Claude to reason over during
-     * recall. Excludes provenance (id, source text) that the model doesn't need.
+     * recall. Excludes provenance (id, source text) and respects privacy settings.
+     * Health/Sensitive data is always kept local.
      */
-    fun toRecallSummary(): String = buildString {
+    fun toRecallSummary(shareLocation: Boolean = true): String = buildString {
+        val isSensitive = category == MemoryCategory.OTHER // Placeholder for HEALTH category
+        
         append("Title: $title | Category: $category")
-        if (summary.isNotBlank()) append(" | Summary: $summary")
-        occurredOn?.let { append(" | Date: $it") }
-        locationName?.let { append(" | Location: $it") }
-        if (attributes.isNotEmpty()) append(" | Details: $attributes")
-        if (tags.isNotEmpty()) append(" | Tags: ${tags.joinToString()}")
+        
+        if (!isSensitive) {
+            if (summary.isNotBlank()) append(" | Summary: $summary")
+            occurredOn?.let { append(" | Date: $it") }
+            if (shareLocation) {
+                locationName?.let { append(" | Location: $it") }
+            }
+            if (attributes.isNotEmpty()) append(" | Details: $attributes")
+            if (tags.isNotEmpty()) append(" | Tags: ${tags.joinToString()}")
+        } else {
+            append(" | [Content restricted for privacy: Health/Sensitive data is kept local]")
+        }
     }
 }
 

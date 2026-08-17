@@ -8,7 +8,9 @@ import android.util.Log
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 /**
@@ -52,8 +54,8 @@ class LocationProvider(private val context: Context) {
         }
     }
 
-    private fun getAddressName(latitude: Double, longitude: Double): String? {
-        return try {
+    private suspend fun getAddressName(latitude: Double, longitude: Double): String? = withContext(Dispatchers.IO) {
+        try {
             val geocoder = Geocoder(context, Locale.getDefault())
             val addresses = geocoder.getFromLocation(latitude, longitude, 1)
             val address = addresses?.firstOrNull()

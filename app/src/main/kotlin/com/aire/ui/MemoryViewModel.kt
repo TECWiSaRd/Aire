@@ -35,7 +35,10 @@ data class MemoryUiState(
     val currentLocation: DeviceLocation? = null,
     val error: String? = null,
     val aiModel: String = "claude-3-5-haiku-latest",
-    val appearance: String = "System"
+    val appearance: String = "System",
+    val locationFeaturesEnabled: Boolean = false,
+    val storeLocationWithMemories: Boolean = false,
+    val shareLocationWithAi: Boolean = false,
 )
 
 /**
@@ -60,15 +63,30 @@ class MemoryViewModel(
 
     init {
         viewModelScope.launch {
-            combine(settings.anthropicApiKey, settings.aiModel, settings.appearance) { key, model, appearance ->
-                Triple(key, model, appearance)
-            }.collect { (key, model, appearance) ->
+            combine(
+                settings.anthropicApiKey,
+                settings.aiModel,
+                settings.appearance,
+                settings.locationFeaturesEnabled,
+                settings.storeLocationWithMemories,
+                settings.shareLocationWithAi
+            ) { args: Array<*> ->
+                val key = args[0] as? String
+                val model = args[1] as String
+                val appearance = args[2] as String
+                val locEnabled = args[3] as Boolean
+                val locStore = args[4] as Boolean
+                val locAi = args[5] as Boolean
+                
                 _uiState.update { it.copy(
                     isAiAvailable = !key.isNullOrBlank(),
                     aiModel = model,
-                    appearance = appearance
+                    appearance = appearance,
+                    locationFeaturesEnabled = locEnabled,
+                    storeLocationWithMemories = locStore,
+                    shareLocationWithAi = locAi
                 ) }
-            }
+            }.collect()
         }
     }
 
@@ -87,6 +105,7 @@ class MemoryViewModel(
 
     /** Refresh current location context. Call this when starting a conversation or capture. */
     fun refreshLocation() {
+        if (!uiState.value.locationFeaturesEnabled) return
         viewModelScope.launch {
             val location = locationProvider.getCurrentLocation()
             _uiState.update { it.copy(currentLocation = location) }
@@ -107,7 +126,7 @@ class MemoryViewModel(
 
     private fun saveMemoryFromResponse(response: AssistantResponse) {
         val fields = response.extractedFields ?: return
-        val loc = uiState.value.currentLocation
+        val loc = if (uiState.value.storeLocationWithMemories) uiState.value.currentLocation else null
         val record = MemoryRecord(
             id = UUID.randomUUID().toString(),
             category = fields.category,
@@ -170,10 +189,16 @@ class MemoryViewModel(
     }
 
     private fun buildAssistantContext(): String {
-        val memories = records.value.asSequence().take(10).joinToString("\n") { it.toRecallSummary() }
-        val locationText = uiState.value.currentLocation?.let { 
-            "User's Current Location: ${it.name ?: "Unknown area"} (${it.latitude}, ${it.longitude})" 
-        } ?: "User's Location: Unknown (Permission not granted or GPS unavailable)"
+        val memories = records.value.asSequence().take(10).joinToString("\n") { 
+            it.toRecallSummary(shareLocation = uiState.value.shareLocationWithAi) 
+        }
+        val locationText = if (uiState.value.shareLocationWithAi) {
+            uiState.value.currentLocation?.let { 
+                "User's Current Location: ${it.name ?: "Unknown area"} (${it.latitude}, ${it.longitude})" 
+            } ?: "User's Location: Unknown (GPS unavailable)"
+        } else {
+            "User's Location: Not provided (Privacy mode)"
+        }
 
         return """
             Recent Memories:
@@ -219,6 +244,9 @@ class MemoryViewModel(
     fun updateGoogleApiKey(key: String) = viewModelScope.launch { settings.setGoogleApiKey(key) }
     fun updateModel(model: String) = viewModelScope.launch { settings.setModel(model) }
     fun updateAppearance(appearance: String) = viewModelScope.launch { settings.setAppearance(appearance) }
+    fun updateLocationEnabled(enabled: Boolean) = viewModelScope.launch { settings.setLocationEnabled(enabled) }
+    fun updateStoreLocation(enabled: Boolean) = viewModelScope.launch { settings.setStoreLocation(enabled) }
+    fun updateShareLocationAi(enabled: Boolean) = viewModelScope.launch { settings.setShareLocationAi(enabled) }
 
     private fun Throwable.friendlyMessage(): String =
         message?.takeIf { it.isNotBlank() } ?: "Something went wrong (${this::class.simpleName})."
