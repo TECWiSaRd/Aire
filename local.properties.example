@@ -1,0 +1,9 @@
+# Copy this file to `local.properties` and fill in the values.
+# `local.properties` is git-ignored so your key never gets committed.
+
+# Path to your Android SDK (Android Studio usually sets this for you).
+# sdk.dir=/Users/you/Library/Android/sdk
+
+# Anthropic API key for the prototype. PROTOTYPE ONLY — see AnthropicClientProvider:
+# a key baked into the app ships inside the APK. Move to a backend proxy before release.
+ANTHROPIC_API_KEY=sk-ant-...
