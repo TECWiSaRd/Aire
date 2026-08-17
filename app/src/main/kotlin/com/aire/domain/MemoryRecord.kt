@@ -39,6 +39,10 @@ data class MemoryRecord(
     val sourceType: SourceType = SourceType.TEXT,
     /** Local file path to the captured image, if any. */
     val imagePath: String? = null,
+    /** Human-readable location name (e.g., "Mission District, San Francisco"). */
+    val locationName: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 ) {
     /**
      * A token-efficient version of the record for Claude to reason over during
@@ -48,6 +52,7 @@ data class MemoryRecord(
         append("Title: $title | Category: $category")
         if (summary.isNotBlank()) append(" | Summary: $summary")
         occurredOn?.let { append(" | Date: $it") }
+        locationName?.let { append(" | Location: $it") }
         if (attributes.isNotEmpty()) append(" | Details: $attributes")
         if (tags.isNotEmpty()) append(" | Tags: ${tags.joinToString()}")
     }

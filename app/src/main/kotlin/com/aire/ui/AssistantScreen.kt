@@ -44,6 +44,23 @@ fun AssistantScreen(viewModel: MemoryViewModel) {
         if (isGranted) viewModel.startListening(context)
     }
 
+    val locationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.values.any { it }) {
+            viewModel.refreshLocation()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        locationPermission.launch(
+            arrayOf(
+                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                android.Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        )
+    }
+
     LaunchedEffect(ui.chatHistory.size) {
         if (ui.chatHistory.isNotEmpty()) {
             listState.animateScrollToItem(ui.chatHistory.size - 1)

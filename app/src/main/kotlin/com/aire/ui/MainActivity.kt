@@ -11,6 +11,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aire.data.IntegrationManager
+import com.aire.data.LocationProvider
 import com.aire.data.MemoryDatabase
 import com.aire.data.SettingsRepository
 import com.aire.ui.theme.AireTheme
@@ -21,9 +23,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val dao = MemoryDatabase.get(applicationContext).dao()
         val settings = SettingsRepository(applicationContext)
+        val locationProvider = LocationProvider(applicationContext)
+        val integrationManager = IntegrationManager(applicationContext)
         
         setContent {
-            val vm: MemoryViewModel = viewModel(factory = MemoryViewModel.Factory(dao, settings))
+            val vm: MemoryViewModel = viewModel(factory = MemoryViewModel.Factory(dao, settings, locationProvider, integrationManager))
             val uiState by vm.uiState.collectAsState()
 
             AireTheme(appearance = uiState.appearance) {

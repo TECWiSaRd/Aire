@@ -21,7 +21,10 @@ data class MemoryRecordEntity(
     val capturedAt: Long,
     val sourceText: String,
     val sourceType: String,
-    val imagePath: String? = null
+    val imagePath: String? = null,
+    val locationName: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 ) {
     fun toDomain(): MemoryRecord = MemoryRecord(
         id = id,
@@ -34,7 +37,10 @@ data class MemoryRecordEntity(
         capturedAt = capturedAt,
         sourceText = sourceText,
         sourceType = SourceType.valueOf(sourceType),
-        imagePath = imagePath
+        imagePath = imagePath,
+        locationName = locationName,
+        latitude = latitude,
+        longitude = longitude
     )
 
     companion object {
@@ -49,7 +55,10 @@ data class MemoryRecordEntity(
             capturedAt = record.capturedAt,
             sourceText = record.sourceText,
             sourceType = record.sourceType.name,
-            imagePath = record.imagePath
+            imagePath = record.imagePath,
+            locationName = record.locationName,
+            latitude = record.latitude,
+            longitude = record.longitude
         )
     }
 }
@@ -59,7 +68,8 @@ data class MemoryRecordEntity(
 data class MemoryRecordFts(
     val title: String,
     val summary: String,
-    val tagsJson: String
+    val tagsJson: String,
+    val locationName: String?
 )
 
 @Dao
@@ -82,7 +92,7 @@ interface MemoryDao {
     suspend fun search(query: String, limit: Int = 20): List<MemoryRecordEntity>
 }
 
-@Database(entities = [MemoryRecordEntity::class, MemoryRecordFts::class], version = 2, exportSchema = false)
+@Database(entities = [MemoryRecordEntity::class, MemoryRecordFts::class], version = 3, exportSchema = false)
 abstract class MemoryDatabase : RoomDatabase() {
     abstract fun dao(): MemoryDao
 

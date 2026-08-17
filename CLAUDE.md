@@ -1,4 +1,4 @@
-# AI Life Organizer — Android (Pixel-first)
+# Aire — Android (Pixel-first)
 
 ## Overview
 
