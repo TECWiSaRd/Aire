@@ -17,15 +17,21 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class SettingsRepository(private val context: Context) {
 
     private val KEY_API_KEY = stringPreferencesKey("anthropic_api_key")
+    private val KEY_GOOGLE_API_KEY = stringPreferencesKey("google_api_key")
     private val KEY_MODEL = stringPreferencesKey("ai_model")
     private val KEY_APPEARANCE = stringPreferencesKey("appearance")
 
     val anthropicApiKey: Flow<String?> = context.dataStore.data.map { it[KEY_API_KEY] }
+    val googleApiKey: Flow<String?> = context.dataStore.data.map { it[KEY_GOOGLE_API_KEY] }
     val aiModel: Flow<String> = context.dataStore.data.map { it[KEY_MODEL] ?: "claude-3-5-haiku-latest" }
     val appearance: Flow<String> = context.dataStore.data.map { it[KEY_APPEARANCE] ?: "System" }
 
     suspend fun setApiKey(key: String) {
         context.dataStore.edit { it[KEY_API_KEY] = key }
+    }
+
+    suspend fun setGoogleApiKey(key: String) {
+        context.dataStore.edit { it[KEY_GOOGLE_API_KEY] = key }
     }
 
     suspend fun setModel(model: String) {

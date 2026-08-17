@@ -216,6 +216,7 @@ class MemoryViewModel(
     
     // Settings Actions
     fun updateApiKey(key: String) = viewModelScope.launch { settings.setApiKey(key) }
+    fun updateGoogleApiKey(key: String) = viewModelScope.launch { settings.setGoogleApiKey(key) }
     fun updateModel(model: String) = viewModelScope.launch { settings.setModel(model) }
     fun updateAppearance(appearance: String) = viewModelScope.launch { settings.setAppearance(appearance) }
 

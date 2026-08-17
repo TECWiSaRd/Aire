@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 fun SettingsScreen(viewModel: MemoryViewModel) {
     val ui by viewModel.uiState.collectAsState()
     var apiKeyVisible by remember { mutableStateOf(false) }
+    var googleKeyVisible by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -59,18 +60,52 @@ fun SettingsScreen(viewModel: MemoryViewModel) {
                     },
                     placeholder = { Text("sk-ant-...") }
                 )
-                Button(
-                    onClick = { viewModel.updateApiKey(tempKey); tempKey = "" },
-                    modifier = Modifier.align(Alignment.End),
-                    enabled = tempKey.isNotBlank()
-                ) {
-                    Text("Save Key")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.align(Alignment.End)) {
+                    if (ui.isAiAvailable) {
+                        OutlinedButton(onClick = { viewModel.updateApiKey("") }) {
+                            Text("Remove")
+                        }
+                    }
+                    Button(
+                        onClick = { viewModel.updateApiKey(tempKey); tempKey = "" },
+                        enabled = tempKey.isNotBlank()
+                    ) {
+                        Text("Save Key")
+                    }
                 }
                 if (ui.isAiAvailable) {
                     Text("Key is active", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                 } else {
                     Text("No key saved", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                 }
+            }
+
+            // --- Google Cloud Integration ---
+            SettingsSection(title = "Google Cloud Integration") {
+                var tempGoogleKey by remember { mutableStateOf("") }
+
+                OutlinedTextField(
+                    value = tempGoogleKey,
+                    onValueChange = { tempGoogleKey = it },
+                    label = { Text("Google API Key") },
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = if (googleKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { googleKeyVisible = !googleKeyVisible }) {
+                            Icon(if (googleKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
+                        }
+                    },
+                    placeholder = { Text("AIza...") }
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.align(Alignment.End)) {
+                    Button(
+                        onClick = { viewModel.updateGoogleApiKey(tempGoogleKey); tempGoogleKey = "" },
+                        enabled = tempGoogleKey.isNotBlank()
+                    ) {
+                        Text("Save Google Key")
+                    }
+                }
+                Text("Required for advanced Maps & Places features.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
             }
 
             // --- Model Switcher ---

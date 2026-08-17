@@ -236,6 +236,8 @@ fun ChatBubble(message: ChatMessage, onActionClick: (com.aire.claude.AssistantAc
                                     "SAVE_MEMORY" -> Icons.Default.Bookmark
                                     "ADD_CALENDAR" -> Icons.Default.Event
                                     "ADD_CONTACT" -> Icons.Default.Person
+                                    "MAPS_SEARCH" -> Icons.Default.Map
+                                    "OPEN_WEB" -> Icons.Default.Language
                                     else -> Icons.Default.Bolt
                                 }
                                 Icon(icon, null, modifier = Modifier.size(16.dp))
