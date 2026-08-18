@@ -19,6 +19,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -33,6 +36,7 @@ fun HomeScreen(viewModel: MemoryViewModel) {
     val history by viewModel.history.collectAsState()
     val records by viewModel.records.collectAsState()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     
     // Determine Greeting based on time
     val greeting = remember {
@@ -44,15 +48,26 @@ fun HomeScreen(viewModel: MemoryViewModel) {
         }
     }
 
-    // Pick a random "fun" font family
-    val randomFont = remember {
-        listOf(
-            FontFamily.Serif,
-            FontFamily.SansSerif,
-            FontFamily.Monospace,
-            FontFamily.Cursive,
-            FontFamily.Default
-        ).random()
+    // State for the random font
+    var randomFont by remember { mutableStateOf(FontFamily.Default) }
+
+    // Refresh font every time the app is "opened" (brought to foreground)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                randomFont = listOf(
+                    FontFamily.Serif,
+                    FontFamily.SansSerif,
+                    FontFamily.Monospace,
+                    FontFamily.Cursive,
+                    FontFamily.Default
+                ).random()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
     
     var inputText by remember { mutableStateOf("") }
