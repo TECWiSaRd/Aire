@@ -34,7 +34,7 @@ android {
         applicationId = "com.aire"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
+        versionCode = project.findProperty("versionCode")?.toString()?.toInt() ?: 1
         versionName = "0.1.0"
     }
 

@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlin.math.sqrt
 
@@ -26,6 +27,8 @@ fun ChatPortal(
     content: @Composable () -> Unit
 ) {
     val ui by viewModel.uiState.collectAsState()
+    val currentPortalExpansion by rememberUpdatedState(ui.portalExpansion)
+    
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
@@ -37,7 +40,6 @@ fun ChatPortal(
 
     val baseSize = 240.dp
     // Scale starts small (circle) and grows to fill screen
-    // We need the scale to reach a point where the circle covers the entire diagonal
     val screenDiagonal = sqrt((screenWidth.value * screenWidth.value) + (screenHeight.value * screenHeight.value))
     val targetScale = (screenDiagonal / baseSize.value) * 1.2f
     val currentScale = 1f + (expansion * (targetScale - 1f))
@@ -45,7 +47,7 @@ fun ChatPortal(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.6f * (1f - expansion)))
+            .background(Color.Black.copy(alpha = 0.4f * (1f - expansion)))
             .pointerInput(Unit) {
                 detectDragGestures(
                     onDragStart = { },
@@ -57,15 +59,14 @@ fun ChatPortal(
                         val centerY = size.height / 2
                         val dist = sqrt((currentPos.x - centerX) * (currentPos.x - centerX) + (currentPos.y - centerY) * (currentPos.y - centerY))
                         
-                        // Normalized distance from center to drive expansion
-                        // Start expanding when dragging away from the center area
-                        val normalizedDist = ((dist - 100f) / 600f).coerceIn(0f, 1f)
-                        if (normalizedDist > ui.portalExpansion) {
+                        // Dragging outward from center drives expansion
+                        val normalizedDist = ((dist - 120f) / 500f).coerceIn(0f, 1f)
+                        if (normalizedDist > currentPortalExpansion) {
                             viewModel.setPortalExpansion(normalizedDist)
                         }
                     },
                     onDragEnd = {
-                        if (ui.portalExpansion > 0.3f) {
+                        if (currentPortalExpansion > 0.3f) {
                             viewModel.setPortalExpansion(1f)
                         } else {
                             viewModel.setPortalExpansion(0f)
@@ -74,8 +75,10 @@ fun ChatPortal(
                 )
             }
             .pointerInput(Unit) {
+                var zoomAccumulator = 1f
                 detectTransformGestures { _, _, zoom, _ ->
-                    if (zoom < 0.7f) {
+                    zoomAccumulator *= zoom
+                    if (zoomAccumulator < 0.7f) {
                         viewModel.closePortal()
                     }
                 }
@@ -100,7 +103,7 @@ fun ChatPortal(
                 Box(modifier = Modifier
                     .requiredSize(screenWidth, screenHeight)
                     .graphicsLayer {
-                        // Counter-scale to keep content looking normal size
+                        // Keep content at its target size while the bubble scales
                         scaleX = 1f / currentScale
                         scaleY = 1f / currentScale
                     }
@@ -108,30 +111,41 @@ fun ChatPortal(
                     content()
                 }
                 
-                // Interactive overlay guidance
-                if (expansion < 0.4f) {
+                // Show a preview overlay if the portal isn't fully open
+                if (expansion < 0.5f) {
+                    val lastAssistantMessage = ui.chatHistory.lastOrNull { !it.isUser }
+                    
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f * (1f - expansion))),
+                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f * (1f - (expansion * 2).coerceIn(0f, 1f))))
+                            .padding(24.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            if (ui.isThinking && ui.chatHistory.isEmpty()) {
+                            if (ui.isThinking && lastAssistantMessage == null) {
                                 CircularProgressIndicator(modifier = Modifier.size(48.dp))
-                            } else {
-                                Icon(
-                                    Icons.Default.AutoAwesome, 
-                                    null, 
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
                                 Spacer(Modifier.height(16.dp))
+                                Text("Aire is thinking...", style = MaterialTheme.typography.bodyMedium)
+                            } else if (lastAssistantMessage != null) {
+                                Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.height(12.dp))
                                 Text(
-                                    "Pull outward to open chat",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.primary
+                                    text = lastAssistantMessage.text,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 4
                                 )
+                                Spacer(Modifier.height(12.dp))
+                                Text(
+                                    "Pull outward to open",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                            } else {
+                                Icon(Icons.Default.AutoAwesome, null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.height(16.dp))
+                                Text("Pull outward to open chat", style = MaterialTheme.typography.labelLarge)
                             }
                         }
                     }
