@@ -26,6 +26,8 @@ fun ChatPortal(
     content: @Composable () -> Unit
 ) {
     val ui by viewModel.uiState.collectAsState()
+    val currentPortalExpansion by rememberUpdatedState(ui.portalExpansion)
+    
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
@@ -58,14 +60,13 @@ fun ChatPortal(
                         val dist = sqrt((currentPos.x - centerX) * (currentPos.x - centerX) + (currentPos.y - centerY) * (currentPos.y - centerY))
                         
                         // Normalized distance from center to drive expansion
-                        // Start expanding when dragging away from the center area
                         val normalizedDist = ((dist - 100f) / 600f).coerceIn(0f, 1f)
-                        if (normalizedDist > ui.portalExpansion) {
+                        if (normalizedDist > currentPortalExpansion) {
                             viewModel.setPortalExpansion(normalizedDist)
                         }
                     },
                     onDragEnd = {
-                        if (ui.portalExpansion > 0.3f) {
+                        if (currentPortalExpansion > 0.3f) {
                             viewModel.setPortalExpansion(1f)
                         } else {
                             viewModel.setPortalExpansion(0f)
@@ -74,8 +75,10 @@ fun ChatPortal(
                 )
             }
             .pointerInput(Unit) {
+                var zoomAccumulator = 1f
                 detectTransformGestures { _, _, zoom, _ ->
-                    if (zoom < 0.7f) {
+                    zoomAccumulator *= zoom
+                    if (zoomAccumulator < 0.7f) {
                         viewModel.closePortal()
                     }
                 }
