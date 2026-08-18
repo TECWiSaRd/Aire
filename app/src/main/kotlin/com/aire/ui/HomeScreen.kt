@@ -4,10 +4,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -56,11 +57,15 @@ fun HomeScreen(viewModel: MemoryViewModel) {
                         IconButton(onClick = { viewModel.navigateTo(AppScreen.SETTINGS) }) {
                             Icon(Icons.Default.Settings, contentDescription = "Settings")
                         }
-                        IconButton(onClick = { viewModel.navigateTo(AppScreen.VAULT) }) {
-                            Icon(Icons.Default.Dns, contentDescription = "Memories")
-                        }
                     }
                 )
+            }
+        },
+        bottomBar = {
+            if (!ui.isPortalVisible) {
+                HistorySwipeBar(records.firstOrNull()) {
+                    viewModel.navigateTo(AppScreen.VAULT)
+                }
             }
         }
     ) { padding ->
@@ -129,65 +134,62 @@ fun HomeScreen(viewModel: MemoryViewModel) {
             } else {
                 Spacer(Modifier.height(64.dp))
             }
-
-            Spacer(Modifier.height(48.dp))
-
-            // --- Recent Memories Section ---
-            if (records.isNotEmpty() && !ui.isPortalVisible) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        "Recent History",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    
-                    records.take(3).forEach { record ->
-                        RecentItem(record) {
-                            viewModel.navigateTo(AppScreen.VAULT)
-                        }
-                        Spacer(Modifier.height(12.dp))
-                    }
-                }
-            }
         }
     }
 }
 
 @Composable
-private fun RecentItem(record: MemoryRecord, onClick: () -> Unit) {
+fun HistorySwipeBar(latestRecord: MemoryRecord?, onSwipeUp: () -> Unit) {
+    var offsetY by remember { mutableStateOf(0f) }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-        shape = MaterialTheme.shapes.large
+            .navigationBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 16.dp)
+            .height(80.dp)
+            .offset(y = offsetY.dp)
+            .pointerInput(Unit) {
+                detectVerticalDragGestures(
+                    onVerticalDrag = { change, dragAmount ->
+                        change.consume()
+                        offsetY = (offsetY + dragAmount).coerceAtMost(0f)
+                        if (offsetY < -100f) {
+                            onSwipeUp()
+                            offsetY = 0f
+                        }
+                    },
+                    onDragEnd = {
+                        offsetY = 0f
+                    }
+                )
+            },
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(24.dp),
+        tonalElevation = 2.dp
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Icon(
-                Icons.Default.History,
+                Icons.Default.KeyboardArrowUp,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
             )
-            Spacer(Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = record.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1
-                )
-                Text(
-                    text = record.summary,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    maxLines = 1
-                )
-            }
+            Text(
+                text = latestRecord?.title ?: "No recent history",
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Swipe up for history",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.outline
+            )
         }
     }
 }
