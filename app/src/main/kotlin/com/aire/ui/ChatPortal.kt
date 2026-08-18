@@ -1,12 +1,13 @@
 package com.aire.ui
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
@@ -27,7 +28,7 @@ import kotlin.math.sqrt
 @Composable
 fun ChatPortal(
     viewModel: MemoryViewModel,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val ui by viewModel.uiState.collectAsState()
     val currentPortalExpansion by rememberUpdatedState(ui.portalExpansion)
@@ -37,19 +38,39 @@ fun ChatPortal(
     val screenHeight = configuration.screenHeightDp.dp
     val density = LocalDensity.current
     
-    // Spring animation for much smoother physical feel
+    // 1. Initial Morph State: Bar -> Circle
+    var isMorphed by remember { mutableStateOf(value = false) }
+    LaunchedEffect(Unit) {
+        isMorphed = true
+    }
+
+    // Portal base dimensions (matching the chat bar)
+    val barWidth = screenWidth - 48.dp
+    val barHeight = 64.dp
+    val barCornerRadius = 32.dp
+
+    // Animate dimensions from Bar to Circle
+    val currentBaseHeight by animateDpAsState(
+        targetValue = if (isMorphed) barWidth else barHeight,
+        animationSpec = spring(stiffness = 400f, dampingRatio = 0.7f),
+        label = "morphHeight"
+    )
+    val currentCornerRadius by animateDpAsState(
+        targetValue = if (isMorphed) barWidth / 2 else barCornerRadius,
+        animationSpec = spring(stiffness = 400f, dampingRatio = 0.7f),
+        label = "morphCorners"
+    )
+
+    // 2. Expansion Animation: Circle -> Full Screen
     val expansion by animateFloatAsState(
         targetValue = ui.portalExpansion,
-        animationSpec = spring(stiffness = 500f, dampingRatio = 0.8f),
+        animationSpec = spring(stiffness = 600f, dampingRatio = 0.8f),
         label = "expansion"
     )
 
-    val baseSize = 240.dp
-    val baseSizePx = with(density) { baseSize.toPx() }
-    
-    // Scale starts small and grows to cover the entire screen
+    val baseSizePx = with(density) { barWidth.toPx() }
     val screenDiagonal = sqrt((screenWidth.value * screenWidth.value) + (screenHeight.value * screenHeight.value))
-    val targetScale = (screenDiagonal / baseSize.value) * 1.5f
+    val targetScale = (screenDiagonal / barWidth.value) * 1.5f
     val currentScale = 1f + (expansion * (targetScale - 1f))
 
     Box(
@@ -58,43 +79,42 @@ fun ChatPortal(
             .background(Color.Black.copy(alpha = 0.5f * (1f - expansion))),
         contentAlignment = Alignment.Center
     ) {
-        // --- The Portal Bubble ---
+        // --- The Portal Bubble (Morphing & Expanding) ---
         Surface(
             modifier = Modifier
-                .size(baseSize)
+                .width(barWidth)
+                .height(currentBaseHeight)
                 .graphicsLayer {
                     scaleX = currentScale
                     scaleY = currentScale
-                    // Morph from circle to square as we expand
-                    shape = CircleShape
-                    clip = true
+                    alpha = 1f
                 }
+                .clip(RoundedCornerShape(currentCornerRadius))
                 .clickable { viewModel.setPortalExpansion(1f) },
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 8.dp,
             shadowElevation = 12.dp
         ) {
             Box(contentAlignment = Alignment.Center) {
-                // Fixed-size content container that doesn't "stretch" with the bubble
+                // Fixed-size content container (The real Chat Screen)
                 Box(modifier = Modifier
                     .requiredSize(screenWidth, screenHeight)
                     .graphicsLayer {
-                        // Counter-scale so content looks perfectly normal at all times
                         scaleX = 1f / currentScale
                         scaleY = 1f / currentScale
-                        // Alpha-blend the real chat content as we expand
-                        alpha = (expansion * 2f).coerceIn(0f, 1f)
+                        // Alpha-blend content in as we expand
+                        alpha = (expansion * 1.5f).coerceIn(0f, 1f)
                     }
                 ) {
                     content()
                 }
                 
                 // --- Preview / Guidance Overlay ---
-                // Fades out as you expand
-                val overlayAlpha = (1f - (expansion * 2f)).coerceIn(0f, 1f)
+                val lastAssistantMessage = ui.chatHistory.lastOrNull { !it.isUser }
+                // Overlay visibility: Visible during morph, fades during expansion
+                val overlayAlpha = (1f - (expansion * 2.5f)).coerceIn(0f, 1f)
+                
                 if (overlayAlpha > 0f) {
-                    val lastAssistantMessage = ui.chatHistory.lastOrNull { !it.isUser }
-                    
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -106,7 +126,7 @@ fun ChatPortal(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.padding(32.dp)
                         ) {
-                            if (ui.isThinking && lastAssistantMessage == null) {
+                            if (ui.isThinking && (lastAssistantMessage == null)) {
                                 CircularProgressIndicator(modifier = Modifier.size(48.dp))
                                 Spacer(Modifier.height(16.dp))
                                 Text("Aire is thinking...", style = MaterialTheme.typography.bodyMedium)
@@ -117,7 +137,7 @@ fun ChatPortal(
                                     text = lastAssistantMessage.text,
                                     style = MaterialTheme.typography.bodyMedium,
                                     textAlign = TextAlign.Center,
-                                    maxLines = 5
+                                    maxLines = 6
                                 )
                                 Spacer(Modifier.height(16.dp))
                                 Text(
@@ -162,11 +182,11 @@ fun ChatPortal(
                         val dy = centroid.y - centerY
                         val dist = sqrt(dx * dx + dy * dy)
                         
-                        val hitRadius = baseSizePx * 1.2f
-                        if (dist <= hitRadius || currentPortalExpansion > 0f) {
-                            val startRadius = baseSizePx / 4f
-                            val endRange = with(density) { 320.dp.toPx() }
-                            val newExpansion = ((dist - startRadius) / (endRange - startRadius)).coerceIn(0f, 1f)
+                        val hitRadius = baseSizePx * 0.7f
+                        if (dist >= hitRadius || currentPortalExpansion > 0f) {
+                            val startRange = baseSizePx / 2f
+                            val endRange = size.width * 0.45f
+                            val newExpansion = ((dist - startRange) / (endRange - startRange)).coerceIn(0f, 1f)
                             
                             if (newExpansion > gestureMaxExpansion) {
                                 gestureMaxExpansion = newExpansion
