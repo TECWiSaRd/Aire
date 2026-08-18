@@ -64,14 +64,27 @@ class MemoryViewModel(
     private val _searchResults = MutableStateFlow<List<MemoryRecord>>(emptyList())
     val searchResults: StateFlow<List<MemoryRecord>> = _searchResults.asStateFlow()
 
+    private var currentSearchJob: kotlinx.coroutines.Job? = null
+
     fun searchMemories(query: String) {
+        currentSearchJob?.cancel()
         if (query.isBlank()) {
             _searchResults.value = emptyList()
             return
         }
-        viewModelScope.launch {
-            val results = dao.search(query).map { it.toDomain() }
-            _searchResults.value = results
+        
+        currentSearchJob = viewModelScope.launch {
+            // Sanitize query for FTS4: wrap in quotes and escape internal quotes
+            val sanitized = query.replace("\"", "\"\"")
+            val ftsQuery = "\"$sanitized*\""
+            
+            try {
+                val results = dao.search(ftsQuery).map { it.toDomain() }
+                _searchResults.value = results
+            } catch (e: Exception) {
+                // Handle cases where FTS syntax might still be invalid
+                _searchResults.value = emptyList()
+            }
         }
     }
 
@@ -239,10 +252,14 @@ class MemoryViewModel(
         if (voiceSynthesizer == null) {
             voiceSynthesizer = VoiceSynthesizer(context) {
                 // When Aire finishes speaking, optionally restart listening in Voice Mode
-                _uiState.update { it.copy(isSpeaking = false) }
-                if (uiState.value.currentScreen == AppScreen.VOICE_MODE) {
-                    voiceRecognizer?.start()
-                    _uiState.update { it.copy(isListening = true) }
+                // Ensure UI state update happens on the main thread
+                viewModelScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    _uiState.update { it.copy(isSpeaking = false) }
+                    if (uiState.value.currentScreen == AppScreen.VOICE_MODE) {
+                        voiceRecognizer?.stop() // Ensure clean state before restart
+                        voiceRecognizer?.start()
+                        _uiState.update { it.copy(isListening = true) }
+                    }
                 }
             }
         }
@@ -275,6 +292,7 @@ class MemoryViewModel(
 
     override fun onCleared() {
         super.onCleared()
+        voiceRecognizer?.stop()
         voiceSynthesizer?.shutdown()
     }
 
