@@ -16,6 +16,7 @@ import com.aire.data.IntegrationManager
 import com.aire.data.LocationProvider
 import com.aire.data.MemoryDatabase
 import com.aire.data.SettingsRepository
+import com.aire.data.UpdateManager
 import com.aire.ui.theme.AireTheme
 
 class MainActivity : ComponentActivity() {
@@ -26,9 +27,10 @@ class MainActivity : ComponentActivity() {
         val settings = SettingsRepository(applicationContext)
         val locationProvider = LocationProvider(applicationContext)
         val integrationManager = IntegrationManager(applicationContext)
+        val updateManager = UpdateManager(applicationContext)
         
         setContent {
-            val vm: MemoryViewModel = viewModel(factory = MemoryViewModel.Factory(dao, settings, locationProvider, integrationManager))
+            val vm: MemoryViewModel = viewModel(factory = MemoryViewModel.Factory(dao, settings, locationProvider, integrationManager, updateManager))
             val uiState by vm.uiState.collectAsState()
 
             AireTheme(appearance = uiState.appearance) {

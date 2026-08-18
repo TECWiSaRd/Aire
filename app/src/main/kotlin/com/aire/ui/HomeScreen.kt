@@ -85,6 +85,20 @@ fun HomeScreen(viewModel: MemoryViewModel) {
                         fontWeight = FontWeight.Light,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+
+                    // Update Chip
+                    ui.availableUpdate?.let { asset ->
+                        Spacer(Modifier.height(16.dp))
+                        SuggestionChip(
+                            onClick = { viewModel.installUpdate() },
+                            label = { Text("Update available: ${asset.name}") },
+                            icon = { Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp)) },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            )
+                        )
+                    }
+
                     Spacer(Modifier.height(32.dp))
 
                     // --- Centered "Ask Aire" Bar ---

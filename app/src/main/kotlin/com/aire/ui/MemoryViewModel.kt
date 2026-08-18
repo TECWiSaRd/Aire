@@ -34,6 +34,7 @@ data class MemoryUiState(
     val capturedImage: Bitmap? = null,
     val chatHistory: List<ChatMessage> = emptyList(),
     val currentLocation: DeviceLocation? = null,
+    val availableUpdate: GitHubAsset? = null,
     val error: String? = null,
     val aiModel: String = "claude-3-5-haiku-latest",
     val appearance: String = "System",
@@ -52,7 +53,8 @@ class MemoryViewModel(
     private val dao: MemoryDao,
     private val settings: SettingsRepository,
     private val locationProvider: LocationProvider,
-    private val integrationManager: IntegrationManager
+    private val integrationManager: IntegrationManager,
+    private val updateManager: UpdateManager
 ) : ViewModel() {
 
     private var voiceSynthesizer: VoiceSynthesizer? = null
@@ -120,6 +122,19 @@ class MemoryViewModel(
                 ) }
             }.collect()
         }
+        checkForUpdates()
+    }
+
+    private fun checkForUpdates() {
+        viewModelScope.launch {
+            val asset = updateManager.checkForUpdate()
+            _uiState.update { it.copy(availableUpdate = asset) }
+        }
+    }
+
+    fun installUpdate() {
+        val asset = uiState.value.availableUpdate ?: return
+        updateManager.downloadAndInstall(asset)
     }
 
     fun navigateTo(screen: AppScreen) {
@@ -336,7 +351,8 @@ class MemoryViewModel(
         private val dao: MemoryDao,
         private val settings: SettingsRepository,
         private val locationProvider: LocationProvider,
-        private val integrationManager: IntegrationManager
+        private val integrationManager: IntegrationManager,
+        private val updateManager: UpdateManager
     ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
@@ -344,7 +360,8 @@ class MemoryViewModel(
                 dao = dao,
                 settings = settings,
                 locationProvider = locationProvider,
-                integrationManager = integrationManager
+                integrationManager = integrationManager,
+                updateManager = updateManager
             ) as T
         }
     }
