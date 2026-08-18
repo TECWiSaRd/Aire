@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -32,6 +33,27 @@ fun HomeScreen(viewModel: MemoryViewModel) {
     val history by viewModel.history.collectAsState()
     val records by viewModel.records.collectAsState()
     val context = LocalContext.current
+    
+    // Determine Greeting based on time
+    val greeting = remember {
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        when (hour) {
+            in 0..11 -> "Good morning."
+            in 12..16 -> "Good afternoon."
+            else -> "Good evening."
+        }
+    }
+
+    // Pick a random "fun" font family
+    val randomFont = remember {
+        listOf(
+            FontFamily.Serif,
+            FontFamily.SansSerif,
+            FontFamily.Monospace,
+            FontFamily.Cursive,
+            FontFamily.Default
+        ).random()
+    }
     
     var inputText by remember { mutableStateOf("") }
 
@@ -97,8 +119,9 @@ fun HomeScreen(viewModel: MemoryViewModel) {
         ) {
             // --- Welcome Section ---
             Text(
-                "Good afternoon.",
+                text = greeting,
                 style = MaterialTheme.typography.displaySmall,
+                fontFamily = randomFont,
                 fontWeight = FontWeight.Light,
                 color = MaterialTheme.colorScheme.onSurface
             )
