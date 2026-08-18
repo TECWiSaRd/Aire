@@ -55,15 +55,20 @@ fun HomeScreen(viewModel: MemoryViewModel) {
                                 Spacer(Modifier.width(8.dp))
                                 Text("Aire", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
                             }
-                            Text(
-                                text = "${records.size} memories",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
                                 modifier = Modifier
-                                    .clip(CircleShape)
+                                    .padding(top = 4.dp)
                                     .clickable { viewModel.navigateTo(AppScreen.VAULT) }
-                                    .padding(horizontal = 8.dp, vertical = 2.dp)
-                            )
+                            ) {
+                                Text(
+                                    text = "${records.size} memories",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                )
+                            }
                         }
                     },
                     actions = {
