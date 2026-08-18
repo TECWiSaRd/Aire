@@ -40,6 +40,8 @@ data class MemoryUiState(
     val locationFeaturesEnabled: Boolean = false,
     val storeLocationWithMemories: Boolean = false,
     val shareLocationWithAi: Boolean = false,
+    val portalExpansion: Float = 0f,
+    val isPortalVisible: Boolean = false,
 )
 
 /**
@@ -124,6 +126,17 @@ class MemoryViewModel(
         _uiState.update { it.copy(currentScreen = screen) }
     }
 
+    fun setPortalExpansion(progress: Float) {
+        _uiState.update { it.copy(portalExpansion = progress) }
+        if (progress >= 1f) {
+            _uiState.update { it.copy(currentScreen = AppScreen.CHAT, isPortalVisible = false, portalExpansion = 0f) }
+        }
+    }
+
+    fun closePortal() {
+        _uiState.update { it.copy(isPortalVisible = false, portalExpansion = 0f, currentScreen = AppScreen.HOME) }
+    }
+
     /** Called when the camera shutter is pressed. */
     fun onImageCaptured(bitmap: Bitmap) {
         _uiState.update { it.copy(capturedImage = bitmap, currentScreen = AppScreen.HOME) }
@@ -180,9 +193,9 @@ class MemoryViewModel(
     fun sendMessage(text: String) {
         if (text.isBlank() && (uiState.value.capturedImage == null)) return
         
-        // Auto-navigate to chat if sending from Home
+        // Trigger portal if sending from Home
         if (uiState.value.currentScreen == AppScreen.HOME) {
-            _uiState.update { it.copy(currentScreen = AppScreen.CHAT) }
+            _uiState.update { it.copy(isPortalVisible = true, portalExpansion = 0f) }
         }
 
         val userImage = uiState.value.capturedImage

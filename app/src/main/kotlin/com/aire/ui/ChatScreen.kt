@@ -27,6 +27,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTransformGestures
 import com.aire.claude.AssistantResponse
 import kotlinx.coroutines.launch
 
@@ -51,121 +53,134 @@ fun ChatScreen(viewModel: MemoryViewModel) {
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Aire Assistant") },
-                navigationIcon = {
-                    IconButton(onClick = { viewModel.navigateTo(AppScreen.HOME) }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.clearChat() }) {
-                        Icon(Icons.Default.DeleteSweep, contentDescription = "Clear Chat")
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectTransformGestures { _, _, zoom, _ ->
+                    // Pinch to go back (only if not in Portal overlay)
+                    if (!ui.isPortalVisible && zoom < 0.7f) {
+                        viewModel.navigateTo(AppScreen.HOME)
                     }
                 }
-            )
-        },
-        bottomBar = {
-            // --- Input Bar ---
-            Surface(
-                tonalElevation = 4.dp,
-                shadowElevation = 8.dp,
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-            ) {
-                Column(modifier = Modifier.navigationBarsPadding().imePadding()) {
-                    // Context Preview (Captured Image)
-                    ui.capturedImage?.let { bitmap ->
-                        Box(modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp).size(80.dp)) {
-                            Image(
-                                bitmap = bitmap.asImageBitmap(),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize().clip(MaterialTheme.shapes.medium),
-                                contentScale = ContentScale.Crop
-                            )
-                            IconButton(
-                                onClick = { viewModel.clearCapturedImage() },
-                                modifier = Modifier.align(Alignment.TopEnd).size(24.dp).offset(x = 8.dp, y = (-8).dp)
-                                    .background(MaterialTheme.colorScheme.error, CircleShape)
-                            ) {
-                                Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.onError, modifier = Modifier.size(16.dp))
-                            }
+            }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Aire Assistant") },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.navigateTo(AppScreen.HOME) }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { viewModel.clearChat() }) {
+                            Icon(Icons.Default.DeleteSweep, contentDescription = "Clear Chat")
                         }
                     }
-
-                    // Transcription UI
-                    if (ui.isListening) {
-                        Text(
-                            text = ui.partialTranscription.ifBlank { "Listening..." },
-                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        IconButton(onClick = { viewModel.navigateTo(AppScreen.LENS) }) {
-                            Icon(Icons.Default.CameraAlt, "Lens", tint = MaterialTheme.colorScheme.primary)
-                        }
-                        IconButton(onClick = {
-                            if (ui.isListening) viewModel.stopListening()
-                            else recordAudioPermission.launch(android.Manifest.permission.RECORD_AUDIO)
-                        }) {
-                            Icon(
-                                if (ui.isListening) Icons.Default.MicOff else Icons.Default.Mic,
-                                "Voice",
-                                tint = if (ui.isListening) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                            )
-                        }
-
-                        OutlinedTextField(
-                            value = inputText,
-                            onValueChange = { inputText = it },
-                            placeholder = { Text("Ask Aire...") },
-                            modifier = Modifier.weight(1f),
-                            shape = MaterialTheme.shapes.extraLarge,
-                            maxLines = 4,
-                            trailingIcon = {
+                )
+            },
+            bottomBar = {
+                // --- Input Bar ---
+                Surface(
+                    tonalElevation = 4.dp,
+                    shadowElevation = 8.dp,
+                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                ) {
+                    Column(modifier = Modifier.navigationBarsPadding().imePadding()) {
+                        // Context Preview (Captured Image)
+                        ui.capturedImage?.let { bitmap ->
+                            Box(modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp).size(80.dp)) {
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize().clip(MaterialTheme.shapes.medium),
+                                    contentScale = ContentScale.Crop
+                                )
                                 IconButton(
-                                    onClick = {
-                                        viewModel.sendMessage(inputText)
-                                        inputText = ""
-                                    },
-                                    enabled = inputText.isNotBlank() || ui.capturedImage != null
+                                    onClick = { viewModel.clearCapturedImage() },
+                                    modifier = Modifier.align(Alignment.TopEnd).size(24.dp).offset(x = 8.dp, y = (-8).dp)
+                                        .background(MaterialTheme.colorScheme.error, CircleShape)
                                 ) {
-                                    Icon(Icons.AutoMirrored.Filled.Send, "Send")
+                                    Icon(Icons.Default.Close, null, tint = MaterialTheme.colorScheme.onError, modifier = Modifier.size(16.dp))
                                 }
                             }
-                        )
+                        }
+
+                        // Transcription UI
+                        if (ui.isListening) {
+                            Text(
+                                text = ui.partialTranscription.ifBlank { "Listening..." },
+                                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            IconButton(onClick = { viewModel.navigateTo(AppScreen.LENS) }) {
+                                Icon(Icons.Default.CameraAlt, "Lens", tint = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = {
+                                if (ui.isListening) viewModel.stopListening()
+                                else recordAudioPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+                            }) {
+                                Icon(
+                                    if (ui.isListening) Icons.Default.MicOff else Icons.Default.Mic,
+                                    "Voice",
+                                    tint = if (ui.isListening) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                                )
+                            }
+
+                            OutlinedTextField(
+                                value = inputText,
+                                onValueChange = { inputText = it },
+                                placeholder = { Text("Ask Aire...") },
+                                modifier = Modifier.weight(1f),
+                                shape = MaterialTheme.shapes.extraLarge,
+                                maxLines = 4,
+                                trailingIcon = {
+                                    IconButton(
+                                        onClick = {
+                                            viewModel.sendMessage(inputText)
+                                            inputText = ""
+                                        },
+                                        enabled = inputText.isNotBlank() || ui.capturedImage != null
+                                    ) {
+                                        Icon(Icons.AutoMirrored.Filled.Send, "Send")
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
-        }
-    ) { padding ->
-        // --- Chat History ---
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(
-                top = padding.calculateTopPadding() + 16.dp,
-                bottom = padding.calculateBottomPadding() + 16.dp,
-                start = 16.dp,
-                end = 16.dp
-            )
-        ) {
-            items(ui.chatHistory, key = { it.id }) { message ->
-                ChatBubble(message, onActionClick = { action ->
-                    viewModel.onActionClicked(action, message.response!!)
-                })
-            }
-            if (ui.isThinking) {
-                item { ThinkingIndicator() }
+        ) { padding ->
+            // --- Chat History ---
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(
+                    top = padding.calculateTopPadding() + 16.dp,
+                    bottom = padding.calculateBottomPadding() + 16.dp,
+                    start = 16.dp,
+                    end = 16.dp
+                )
+            ) {
+                items(ui.chatHistory, key = { it.id }) { message ->
+                    ChatBubble(message, onActionClick = { action ->
+                        viewModel.onActionClicked(action, message.response!!)
+                    })
+                }
+                if (ui.isThinking) {
+                    item { ThinkingIndicator() }
+                }
             }
         }
     }

@@ -2,7 +2,7 @@ package com.aire.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
+import androidx.compose.animation.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,26 +40,28 @@ fun HomeScreen(viewModel: MemoryViewModel) {
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clip(CircleShape).clickable { viewModel.navigateTo(AppScreen.VOICE_MODE) }.padding(horizontal = 8.dp)
-                    ) {
-                        Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Aire", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            if (!ui.isPortalVisible) {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clip(CircleShape).clickable { viewModel.navigateTo(AppScreen.VOICE_MODE) }.padding(horizontal = 8.dp)
+                        ) {
+                            Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Aire", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { viewModel.navigateTo(AppScreen.SETTINGS) }) {
+                            Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        }
+                        IconButton(onClick = { viewModel.navigateTo(AppScreen.VAULT) }) {
+                            Icon(Icons.Default.Dns, contentDescription = "Memories")
+                        }
                     }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.navigateTo(AppScreen.SETTINGS) }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
-                    }
-                    IconButton(onClick = { viewModel.navigateTo(AppScreen.VAULT) }) {
-                        Icon(Icons.Default.Dns, contentDescription = "Memories")
-                    }
-                }
-            )
+                )
+            }
         }
     ) { padding ->
         Column(
@@ -70,73 +72,73 @@ fun HomeScreen(viewModel: MemoryViewModel) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // --- Welcome Section ---
-            Text(
-                "Good afternoon.",
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Light,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(Modifier.height(32.dp))
-
-            // --- Centered "Ask Aire" Bar ---
-            OutlinedTextField(
-                value = inputText,
-                onValueChange = { inputText = it },
-                placeholder = { Text("Ask Aire anything...") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.extraLarge,
-                maxLines = 3,
-                trailingIcon = {
-                    Row(modifier = Modifier.padding(end = 8.dp)) {
-                        IconButton(onClick = {
-                            recordAudioPermission.launch(android.Manifest.permission.RECORD_AUDIO)
-                        }) {
-                            Icon(Icons.Default.Mic, "Voice", tint = MaterialTheme.colorScheme.primary)
-                        }
-                        IconButton(onClick = { viewModel.navigateTo(AppScreen.LENS) }) {
-                            Icon(Icons.Default.CameraAlt, "Lens", tint = MaterialTheme.colorScheme.primary)
-                        }
-                        IconButton(
-                            onClick = {
-                                viewModel.sendMessage(inputText)
-                                inputText = ""
-                            },
-                            enabled = inputText.isNotBlank()
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.Send, "Send", tint = if (inputText.isNotBlank()) MaterialTheme.colorScheme.primary else Color.Gray)
-                        }
-                    }
-                }
-            )
-
-            Spacer(Modifier.height(48.dp))
-
-            // --- Recent Memories Section ---
-            if (records.isNotEmpty()) {
-                Column(modifier = Modifier.fillMaxWidth()) {
+            AnimatedVisibility(
+                visible = !ui.isPortalVisible,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // --- Welcome Section ---
                     Text(
-                        "Recent History",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.outline
+                        "Good afternoon.",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Light,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-                    Spacer(Modifier.height(16.dp))
-                    
-                    records.take(3).forEach { record ->
-                        RecentItem(record) {
-                            // In the future, tapping could open the vault detail
-                            viewModel.navigateTo(AppScreen.VAULT)
+                    Spacer(Modifier.height(32.dp))
+
+                    // --- Centered "Ask Aire" Bar ---
+                    OutlinedTextField(
+                        value = inputText,
+                        onValueChange = { inputText = it },
+                        placeholder = { Text("Ask Aire anything...") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        maxLines = 3,
+                        trailingIcon = {
+                            Row(modifier = Modifier.padding(end = 8.dp)) {
+                                IconButton(onClick = {
+                                    recordAudioPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+                                }) {
+                                    Icon(Icons.Default.Mic, "Voice", tint = MaterialTheme.colorScheme.primary)
+                                }
+                                IconButton(onClick = { viewModel.navigateTo(AppScreen.LENS) }) {
+                                    Icon(Icons.Default.CameraAlt, "Lens", tint = MaterialTheme.colorScheme.primary)
+                                }
+                                IconButton(
+                                    onClick = {
+                                        viewModel.sendMessage(inputText)
+                                        inputText = ""
+                                    },
+                                    enabled = inputText.isNotBlank()
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.Send, "Send", tint = if (inputText.isNotBlank()) MaterialTheme.colorScheme.primary else Color.Gray)
+                                }
+                            }
                         }
-                        Spacer(Modifier.height(12.dp))
+                    )
+
+                    Spacer(Modifier.height(48.dp))
+
+                    // --- Recent Memories Section ---
+                    if (records.isNotEmpty()) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(
+                                "Recent History",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            
+                            records.take(3).forEach { record ->
+                                RecentItem(record) {
+                                    viewModel.navigateTo(AppScreen.VAULT)
+                                }
+                                Spacer(Modifier.height(12.dp))
+                            }
+                        }
                     }
                 }
-            } else {
-                Text(
-                    "Your Memory Vault is ready.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                    textAlign = TextAlign.Center
-                )
             }
         }
     }
