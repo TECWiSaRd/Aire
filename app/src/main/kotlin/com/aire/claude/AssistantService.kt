@@ -112,12 +112,13 @@ class AssistantService(
             Respond with ONLY a JSON object with these fields:
               "explanation": A natural-language response to the user.
               "suggestedActions": A list of actions the user might want to take.
-                Action types: "SAVE_MEMORY", "ADD_CALENDAR", "ADD_CONTACT", "FILE_EXPENSE".
-                Each action has a "label" (user-friendly text) and optional "data" (key-value strings).
-              "extractedFields": If the input contains information worth saving as a memory, 
-                                 provide structured fields here (category, title, summary, etc.).
-                                 Use the same schema as before: category (RECEIPT, EVENT, TASK, CONTACT, DOCUMENT, NOTE, OTHER), 
-                                 title, summary, occurredOn, attributes, tags.
+                Action types & data requirements:
+                - "SAVE_MEMORY": Always use when info seems important. Needs "extractedFields".
+                - "ADD_CALENDAR": Needs "title", "description", "location", "beginTime" (epoch millis), "endTime" (epoch millis).
+                - "ADD_CONTACT": Needs "name", "phone", "email", "notes".
+                - "MAPS_SEARCH": Needs "query" (e.g., "coffee shops near me").
+                - "OPEN_WEB": Needs "url".
+              "extractedFields": Structured data for memories (category, title, summary, etc.).
 
             Guidelines:
               - Be friendly and professional.
@@ -126,6 +127,8 @@ class AssistantService(
               - Always suggest "SAVE_MEMORY" if the input seems important for later.
               - Suggest "ADD_CALENDAR" for events with dates.
               - Suggest "ADD_CONTACT" for business cards or people info.
+              - IMPORTANT: You never have access to the user's detailed health records for synthesis; 
+                if the user asks about health/medical data, explain that it is kept securely on-device only.
         """.trimIndent()
     }
 }

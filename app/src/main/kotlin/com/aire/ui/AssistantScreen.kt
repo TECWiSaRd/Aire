@@ -44,6 +44,25 @@ fun AssistantScreen(viewModel: MemoryViewModel) {
         if (isGranted) viewModel.startListening(context)
     }
 
+    val locationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        if (permissions.values.any { it }) {
+            viewModel.refreshLocation()
+        }
+    }
+
+    LaunchedEffect(ui.locationFeaturesEnabled) {
+        if (ui.locationFeaturesEnabled) {
+            locationPermission.launch(
+                arrayOf(
+                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
+
     LaunchedEffect(ui.chatHistory.size) {
         if (ui.chatHistory.isNotEmpty()) {
             listState.animateScrollToItem(ui.chatHistory.size - 1)
@@ -219,6 +238,8 @@ fun ChatBubble(message: ChatMessage, onActionClick: (com.aire.claude.AssistantAc
                                     "SAVE_MEMORY" -> Icons.Default.Bookmark
                                     "ADD_CALENDAR" -> Icons.Default.Event
                                     "ADD_CONTACT" -> Icons.Default.Person
+                                    "MAPS_SEARCH" -> Icons.Default.Map
+                                    "OPEN_WEB" -> Icons.Default.Language
                                     else -> Icons.Default.Bolt
                                 }
                                 Icon(icon, null, modifier = Modifier.size(16.dp))

@@ -4,11 +4,8 @@ import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.aire.AireConfig
 import com.aire.claude.*
-import com.aire.data.MemoryDao
-import com.aire.data.MemoryRecordEntity
-import com.aire.data.SettingsRepository
+import com.aire.data.*
 import com.aire.domain.MemoryRecord
 import com.aire.domain.SourceType
 import kotlinx.coroutines.flow.*
@@ -23,7 +20,7 @@ data class ChatMessage(
     val image: Bitmap? = null,
     val isUser: Boolean,
     val timestamp: Long = System.currentTimeMillis(),
-    val response: AssistantResponse? = null
+    val response: AssistantResponse? = null,
 )
 
 /** Transient UI state for Assistant interactions. */
@@ -35,9 +32,13 @@ data class MemoryUiState(
     val isAiAvailable: Boolean = true,
     val capturedImage: Bitmap? = null,
     val chatHistory: List<ChatMessage> = emptyList(),
+    val currentLocation: DeviceLocation? = null,
     val error: String? = null,
     val aiModel: String = "claude-3-5-haiku-latest",
-    val appearance: String = "System"
+    val appearance: String = "System",
+    val locationFeaturesEnabled: Boolean = false,
+    val storeLocationWithMemories: Boolean = false,
+    val shareLocationWithAi: Boolean = false,
 )
 
 /**
@@ -46,7 +47,9 @@ data class MemoryUiState(
  */
 class MemoryViewModel(
     private val dao: MemoryDao,
-    private val settings: SettingsRepository
+    private val settings: SettingsRepository,
+    private val locationProvider: LocationProvider,
+    private val integrationManager: IntegrationManager
 ) : ViewModel() {
 
     private val _records = dao.observeAll()
@@ -60,15 +63,30 @@ class MemoryViewModel(
 
     init {
         viewModelScope.launch {
-            combine(settings.anthropicApiKey, settings.aiModel, settings.appearance) { key, model, appearance ->
-                Triple(key, model, appearance)
-            }.collect { (key, model, appearance) ->
+            combine(
+                settings.anthropicApiKey,
+                settings.aiModel,
+                settings.appearance,
+                settings.locationFeaturesEnabled,
+                settings.storeLocationWithMemories,
+                settings.shareLocationWithAi
+            ) { args: Array<*> ->
+                val key = args[0] as? String
+                val model = args[1] as String
+                val appearance = args[2] as String
+                val locEnabled = args[3] as Boolean
+                val locStore = args[4] as Boolean
+                val locAi = args[5] as Boolean
+                
                 _uiState.update { it.copy(
                     isAiAvailable = !key.isNullOrBlank(),
                     aiModel = model,
-                    appearance = appearance
+                    appearance = appearance,
+                    locationFeaturesEnabled = locEnabled,
+                    storeLocationWithMemories = locStore,
+                    shareLocationWithAi = locAi
                 ) }
-            }
+            }.collect()
         }
     }
 
@@ -85,19 +103,30 @@ class MemoryViewModel(
         _uiState.update { it.copy(capturedImage = null) }
     }
 
+    /** Refresh current location context. Call this when starting a conversation or capture. */
+    fun refreshLocation() {
+        if (!uiState.value.locationFeaturesEnabled) return
+        viewModelScope.launch {
+            val location = locationProvider.getCurrentLocation()
+            _uiState.update { it.copy(currentLocation = location) }
+        }
+    }
+
     fun onActionClicked(action: AssistantAction, response: AssistantResponse) {
         when (action.type) {
             "SAVE_MEMORY" -> {
                 saveMemoryFromResponse(response)
             }
             else -> {
-                _uiState.update { it.copy(error = "Integration '${action.label}' coming soon!") }
+                // Delegate to integration manager for system-level actions (MAPS_SEARCH, etc.)
+                integrationManager.execute(action)
             }
         }
     }
 
     private fun saveMemoryFromResponse(response: AssistantResponse) {
         val fields = response.extractedFields ?: return
+        val loc = if (uiState.value.storeLocationWithMemories) uiState.value.currentLocation else null
         val record = MemoryRecord(
             id = UUID.randomUUID().toString(),
             category = fields.category,
@@ -108,7 +137,10 @@ class MemoryViewModel(
             tags = fields.tags,
             capturedAt = System.currentTimeMillis(),
             sourceText = response.explanation,
-            sourceType = SourceType.TEXT
+            sourceType = SourceType.TEXT,
+            locationName = loc?.name,
+            latitude = loc?.latitude,
+            longitude = loc?.longitude
         )
         viewModelScope.launch {
             dao.insert(MemoryRecordEntity.fromDomain(record))
@@ -116,7 +148,7 @@ class MemoryViewModel(
     }
 
     fun sendMessage(text: String) {
-        if (text.isBlank() && uiState.value.capturedImage == null) return
+        if (text.isBlank() && (uiState.value.capturedImage == null)) return
         
         val userImage = uiState.value.capturedImage
         val userMessage = ChatMessage(text = text, image = userImage, isUser = true)
@@ -157,11 +189,22 @@ class MemoryViewModel(
     }
 
     private fun buildAssistantContext(): String {
-        val memories = records.value.take(10).joinToString("\n") { it.toRecallSummary() }
+        val memories = records.value.asSequence().take(10).joinToString("\n") { 
+            it.toRecallSummary(shareLocation = uiState.value.shareLocationWithAi) 
+        }
+        val locationText = if (uiState.value.shareLocationWithAi) {
+            uiState.value.currentLocation?.let { 
+                "User's Current Location: ${it.name ?: "Unknown area"} (${it.latitude}, ${it.longitude})" 
+            } ?: "User's Location: Unknown (GPS unavailable)"
+        } else {
+            "User's Location: Not provided (Privacy mode)"
+        }
+
         return """
             Recent Memories:
             $memories
             
+            $locationText
             Current Time: ${java.text.DateFormat.getDateTimeInstance().format(java.util.Date())}
         """.trimIndent()
     }
@@ -181,11 +224,10 @@ class MemoryViewModel(
             },
             onError = { err ->
                 _uiState.update { it.copy(isListening = false, error = err) }
-            },
-            onEndOfSpeech = {
-                _uiState.update { it.copy(isListening = false) }
             }
-        )
+        ) {
+            _uiState.update { it.copy(isListening = false) }
+        }
         voiceRecognizer?.start()
     }
 
@@ -199,16 +241,30 @@ class MemoryViewModel(
     
     // Settings Actions
     fun updateApiKey(key: String) = viewModelScope.launch { settings.setApiKey(key) }
+    fun updateGoogleApiKey(key: String) = viewModelScope.launch { settings.setGoogleApiKey(key) }
     fun updateModel(model: String) = viewModelScope.launch { settings.setModel(model) }
     fun updateAppearance(appearance: String) = viewModelScope.launch { settings.setAppearance(appearance) }
+    fun updateLocationEnabled(enabled: Boolean) = viewModelScope.launch { settings.setLocationEnabled(enabled) }
+    fun updateStoreLocation(enabled: Boolean) = viewModelScope.launch { settings.setStoreLocation(enabled) }
+    fun updateShareLocationAi(enabled: Boolean) = viewModelScope.launch { settings.setShareLocationAi(enabled) }
 
     private fun Throwable.friendlyMessage(): String =
         message?.takeIf { it.isNotBlank() } ?: "Something went wrong (${this::class.simpleName})."
 
-    class Factory(private val dao: MemoryDao, private val settings: SettingsRepository) : ViewModelProvider.Factory {
+    class Factory(
+        private val dao: MemoryDao,
+        private val settings: SettingsRepository,
+        private val locationProvider: LocationProvider,
+        private val integrationManager: IntegrationManager
+    ) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             @Suppress("UNCHECKED_CAST")
-            return MemoryViewModel(dao = dao, settings = settings) as T
+            return MemoryViewModel(
+                dao = dao,
+                settings = settings,
+                locationProvider = locationProvider,
+                integrationManager = integrationManager
+            ) as T
         }
     }
 }
