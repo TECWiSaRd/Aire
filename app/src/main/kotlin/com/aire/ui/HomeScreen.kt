@@ -23,12 +23,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.aire.domain.MemoryRecord
+import com.aire.data.HistoryRecordEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(viewModel: MemoryViewModel) {
     val ui by viewModel.uiState.collectAsState()
-    val records by viewModel.records.collectAsState()
+    val history by viewModel.history.collectAsState()
     val context = LocalContext.current
     
     var inputText by remember { mutableStateOf("") }
@@ -63,8 +64,8 @@ fun HomeScreen(viewModel: MemoryViewModel) {
         },
         bottomBar = {
             if (!ui.isPortalVisible) {
-                HistorySwipeBar(records.firstOrNull()) {
-                    viewModel.navigateTo(AppScreen.VAULT)
+                HistorySwipeBar(history.firstOrNull()) {
+                    viewModel.navigateTo(AppScreen.HISTORY)
                 }
             }
         }
@@ -139,7 +140,7 @@ fun HomeScreen(viewModel: MemoryViewModel) {
 }
 
 @Composable
-fun HistorySwipeBar(latestRecord: MemoryRecord?, onSwipeUp: () -> Unit) {
+fun HistorySwipeBar(latestHistory: HistoryRecordEntity?, onSwipeUp: () -> Unit) {
     var offsetY by remember { mutableStateOf(0f) }
 
     Surface(
@@ -180,7 +181,7 @@ fun HistorySwipeBar(latestRecord: MemoryRecord?, onSwipeUp: () -> Unit) {
                 modifier = Modifier.size(20.dp)
             )
             Text(
-                text = latestRecord?.title ?: "No recent history",
+                text = latestHistory?.title ?: "No recent history",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

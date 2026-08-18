@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-enum class AppScreen { HOME, CHAT, LENS, SETTINGS, VAULT, VOICE_MODE }
+enum class AppScreen { HOME, CHAT, LENS, SETTINGS, VAULT, VOICE_MODE, HISTORY }
 
 data class ChatMessage(
     val id: String = UUID.randomUUID().toString(),
@@ -64,6 +64,11 @@ class MemoryViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val records: StateFlow<List<MemoryRecord>> = _records
+
+    private val _history = dao.observeHistory()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    
+    val history: StateFlow<List<HistoryRecordEntity>> = _history
 
     private val _searchResults = MutableStateFlow<List<MemoryRecord>>(emptyList())
     val searchResults: StateFlow<List<MemoryRecord>> = _searchResults.asStateFlow()
@@ -220,6 +225,16 @@ class MemoryViewModel(
         // Reset chat history and trigger portal if sending from Home
         if (isFromHome) {
             android.util.Log.d("MemoryViewModel", "New chat initiated from Home. Switching to portal.")
+            
+            // Save to persistent History
+            viewModelScope.launch {
+                dao.insertHistory(HistoryRecordEntity(
+                    title = text.take(30) + if (text.length > 30) "..." else "",
+                    summary = "Conversational interaction",
+                    timestamp = System.currentTimeMillis()
+                ))
+            }
+
             _uiState.update { it.copy(
                 isPortalVisible = true, 
                 portalExpansion = 0f,
