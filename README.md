@@ -43,7 +43,7 @@ Aire is an intelligent Android companion designed to help you organize your life
 ## 🛠 Tech Stack
 
 - **UI**: [Jetpack Compose](https://developer.android.com/jetpack/compose) with Material 3 & Dynamic Color.
-- **AI**: [Anthropic Java SDK](https://github.com/anthropics/anthropic-sdk-java) powering Claude 3.5.
+- **AI**: [Anthropic Java SDK](https://github.com/anthropics/anthropic-sdk-java) powering Claude.
 - **Persistence**: [Room Database](https://developer.android.com/training/data-storage/room) with SQLite FTS4 for indexing.
 - **Camera**: [CameraX](https://developer.android.com/training/camerax) for high-performance visual capture.
 - **Location**: [Google Play Services Location](https://developers.google.com/android/guides/setup) for GPS context.
