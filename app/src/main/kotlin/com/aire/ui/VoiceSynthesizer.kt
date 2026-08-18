@@ -28,7 +28,9 @@ class VoiceSynthesizer(
                     override fun onDone(utteranceId: String?) {
                         onComplete()
                     }
-                    override fun onError(utteranceId: String?) {}
+                    override fun onError(utteranceId: String?) {
+                        onComplete()
+                    }
                 })
             }
         } else {

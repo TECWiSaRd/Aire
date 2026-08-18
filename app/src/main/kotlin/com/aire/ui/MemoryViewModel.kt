@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-enum class AppScreen { HOME, LENS, SETTINGS, VAULT, VOICE_MODE }
+enum class AppScreen { HOME, CHAT, LENS, SETTINGS, VAULT, VOICE_MODE }
 
 data class ChatMessage(
     val id: String = UUID.randomUUID().toString(),
@@ -40,6 +40,8 @@ data class MemoryUiState(
     val locationFeaturesEnabled: Boolean = false,
     val storeLocationWithMemories: Boolean = false,
     val shareLocationWithAi: Boolean = false,
+    val portalExpansion: Float = 0f,
+    val isPortalVisible: Boolean = false,
 )
 
 /**
@@ -64,14 +66,27 @@ class MemoryViewModel(
     private val _searchResults = MutableStateFlow<List<MemoryRecord>>(emptyList())
     val searchResults: StateFlow<List<MemoryRecord>> = _searchResults.asStateFlow()
 
+    private var currentSearchJob: kotlinx.coroutines.Job? = null
+
     fun searchMemories(query: String) {
+        currentSearchJob?.cancel()
         if (query.isBlank()) {
             _searchResults.value = emptyList()
             return
         }
-        viewModelScope.launch {
-            val results = dao.search(query).map { it.toDomain() }
-            _searchResults.value = results
+        
+        currentSearchJob = viewModelScope.launch {
+            // Sanitize query for FTS4: wrap in quotes and escape internal quotes
+            val sanitized = query.replace("\"", "\"\"")
+            val ftsQuery = "\"$sanitized*\""
+            
+            try {
+                val results = dao.search(ftsQuery).map { it.toDomain() }
+                _searchResults.value = results
+            } catch (e: Exception) {
+                // Handle cases where FTS syntax might still be invalid
+                _searchResults.value = emptyList()
+            }
         }
     }
 
@@ -109,6 +124,17 @@ class MemoryViewModel(
 
     fun navigateTo(screen: AppScreen) {
         _uiState.update { it.copy(currentScreen = screen) }
+    }
+
+    fun setPortalExpansion(progress: Float) {
+        _uiState.update { it.copy(portalExpansion = progress) }
+        if (progress >= 1f) {
+            _uiState.update { it.copy(currentScreen = AppScreen.CHAT, isPortalVisible = false, portalExpansion = 0f) }
+        }
+    }
+
+    fun closePortal() {
+        _uiState.update { it.copy(isPortalVisible = false, portalExpansion = 0f, currentScreen = AppScreen.HOME) }
     }
 
     /** Called when the camera shutter is pressed. */
@@ -167,6 +193,11 @@ class MemoryViewModel(
     fun sendMessage(text: String) {
         if (text.isBlank() && (uiState.value.capturedImage == null)) return
         
+        // Trigger portal if sending from Home
+        if (uiState.value.currentScreen == AppScreen.HOME) {
+            _uiState.update { it.copy(isPortalVisible = true, portalExpansion = 0f) }
+        }
+
         val userImage = uiState.value.capturedImage
         val userMessage = ChatMessage(text = text, image = userImage, isUser = true)
         
@@ -239,10 +270,14 @@ class MemoryViewModel(
         if (voiceSynthesizer == null) {
             voiceSynthesizer = VoiceSynthesizer(context) {
                 // When Aire finishes speaking, optionally restart listening in Voice Mode
-                _uiState.update { it.copy(isSpeaking = false) }
-                if (uiState.value.currentScreen == AppScreen.VOICE_MODE) {
-                    voiceRecognizer?.start()
-                    _uiState.update { it.copy(isListening = true) }
+                // Ensure UI state update happens on the main thread
+                viewModelScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    _uiState.update { it.copy(isSpeaking = false) }
+                    if (uiState.value.currentScreen == AppScreen.VOICE_MODE) {
+                        voiceRecognizer?.stop() // Ensure clean state before restart
+                        voiceRecognizer?.start()
+                        _uiState.update { it.copy(isListening = true) }
+                    }
                 }
             }
         }
@@ -275,10 +310,15 @@ class MemoryViewModel(
 
     override fun onCleared() {
         super.onCleared()
+        voiceRecognizer?.stop()
         voiceSynthesizer?.shutdown()
     }
 
     fun clearError() = _uiState.update { it.copy(error = null) }
+    
+    fun clearChat() {
+        _uiState.update { it.copy(chatHistory = emptyList()) }
+    }
     
     // Settings Actions
     fun updateApiKey(key: String) = viewModelScope.launch { settings.setApiKey(key) }

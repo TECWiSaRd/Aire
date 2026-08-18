@@ -35,6 +35,12 @@ fun VoiceModeScreen(viewModel: MemoryViewModel) {
         recordAudioPermission.launch(android.Manifest.permission.RECORD_AUDIO)
     }
 
+    DisposableEffect(viewModel) {
+        onDispose {
+            viewModel.stopListening()
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()

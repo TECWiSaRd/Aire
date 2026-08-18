@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
@@ -31,10 +32,12 @@ class MainActivity : ComponentActivity() {
             val uiState by vm.uiState.collectAsState()
 
             AireTheme(appearance = uiState.appearance) {
-                Surface(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    // Base Layer: Home or other non-chat screens
                     Crossfade(targetState = uiState.currentScreen, label = "ScreenTransition") { screen ->
                         when (screen) {
-                            AppScreen.HOME -> AssistantScreen(vm)
+                            AppScreen.HOME -> HomeScreen(vm)
+                            AppScreen.CHAT -> ChatScreen(vm)
                             AppScreen.LENS -> LensScreen(
                                 onCaptured = { vm.onImageCaptured(it) },
                                 onClose = { vm.navigateTo(AppScreen.HOME) }
@@ -42,6 +45,13 @@ class MainActivity : ComponentActivity() {
                             AppScreen.SETTINGS -> SettingsScreen(vm)
                             AppScreen.VAULT -> VaultScreen(vm)
                             AppScreen.VOICE_MODE -> VoiceModeScreen(vm)
+                        }
+                    }
+
+                    // Overlay Layer: Interactive Portal
+                    if (uiState.isPortalVisible) {
+                        ChatPortal(vm) {
+                            ChatScreen(vm)
                         }
                     }
                 }
