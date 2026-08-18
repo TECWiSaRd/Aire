@@ -82,11 +82,20 @@ class UpdateManager(private val context: Context) {
         val downloadId = downloadManager.enqueue(request)
 
         val onComplete = object : BroadcastReceiver() {
+            @SuppressLint("Range")
             override fun onReceive(context: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 if (id == downloadId) {
-                    installApk(downloadId)
-                    context.unregisterReceiver(this)
+                    val query = DownloadManager.Query().setFilterById(id)
+                    val cursor = downloadManager.query(query)
+                    if (cursor.moveToFirst()) {
+                        val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
+                        if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                            installApk(id)
+                            context.unregisterReceiver(this)
+                        }
+                    }
+                    cursor.close()
                 }
             }
         }

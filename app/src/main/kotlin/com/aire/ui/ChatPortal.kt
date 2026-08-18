@@ -54,6 +54,7 @@ fun ChatPortal(
             .background(Color.Black.copy(alpha = 0.4f * (1f - expansion)))
             .pointerInput(Unit) {
                 var gestureMaxExpansion = 0f
+                var isDragAccepted = false
                 var dragStartPoint: Offset? = null
                 
                 detectDragGestures(
@@ -66,11 +67,14 @@ fun ChatPortal(
                         if (distFromCenter <= (baseSizePx / 2f)) {
                             dragStartPoint = offset
                             gestureMaxExpansion = currentPortalExpansion
+                            isDragAccepted = true
                         } else {
                             dragStartPoint = null
+                            isDragAccepted = false
                         }
                     },
                     onDrag = { change, _ ->
+                        if (!isDragAccepted) return@detectDragGestures
                         val start = dragStartPoint ?: return@detectDragGestures
                         change.consume()
                         
@@ -87,34 +91,34 @@ fun ChatPortal(
                         }
                     },
                     onDragEnd = {
-                        if (gestureMaxExpansion > 0.3f) {
-                            viewModel.setPortalExpansion(1f)
-                        } else {
-                            viewModel.setPortalExpansion(0f)
+                        if (isDragAccepted) {
+                            if (gestureMaxExpansion > 0.3f) {
+                                viewModel.setPortalExpansion(1f)
+                            } else {
+                                viewModel.setPortalExpansion(0f)
+                            }
                         }
+                        gestureMaxExpansion = 0f
+                        isDragAccepted = false
                         dragStartPoint = null
                     },
                     onDragCancel = {
-                        viewModel.setPortalExpansion(0f)
+                        if (isDragAccepted) {
+                            viewModel.setPortalExpansion(0f)
+                        }
+                        gestureMaxExpansion = 0f
+                        isDragAccepted = false
                         dragStartPoint = null
                     }
                 )
             }
             .pointerInput(Unit) {
-                // Simplified zoom tracking: detectTransformGestures 
-                // naturally resets its internal state when pointers are lifted.
+                var cumulativeZoom = 1f
                 detectTransformGestures { _, _, zoom, _ ->
-                    // CodeRabbit: accumulate zoom within the active gesture
-                    // We'll use a property in the ViewModel or a local state 
-                    // if we need persistent accumulation across recompositions,
-                    // but for a single gesture, this local variable is reset 
-                    // when detectTransformGestures starts a new internal loop.
-                    
-                    // To be strictly compliant with "reset at start of each pinch":
-                    // detectTransformGestures does this by finishing and restarting 
-                    // when fingers are lifted.
-                    if (zoom < 0.7f) {
+                    cumulativeZoom *= zoom
+                    if (cumulativeZoom < 0.7f) {
                         viewModel.closePortal()
+                        cumulativeZoom = 1f // Reset after trigger
                     }
                 }
             },
