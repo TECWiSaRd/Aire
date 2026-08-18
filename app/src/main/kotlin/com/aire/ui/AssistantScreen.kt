@@ -5,6 +5,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
@@ -73,7 +74,10 @@ fun AssistantScreen(viewModel: MemoryViewModel) {
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clip(CircleShape).clickable { viewModel.navigateTo(AppScreen.VOICE_MODE) }.padding(horizontal = 8.dp)
+                    ) {
                         Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(8.dp))
                         Text("Aire", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
@@ -83,7 +87,7 @@ fun AssistantScreen(viewModel: MemoryViewModel) {
                     IconButton(onClick = { viewModel.navigateTo(AppScreen.SETTINGS) }) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
-                    IconButton(onClick = { /* Navigate to Memory Vault */ }) {
+                    IconButton(onClick = { viewModel.navigateTo(AppScreen.VAULT) }) {
                         Icon(Icons.Default.Dns, contentDescription = "Memories")
                     }
                 }
