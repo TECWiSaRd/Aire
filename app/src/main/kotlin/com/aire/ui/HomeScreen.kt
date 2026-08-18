@@ -72,85 +72,81 @@ fun HomeScreen(viewModel: MemoryViewModel) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            AnimatedVisibility(
-                visible = !ui.isPortalVisible,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    // --- Welcome Section ---
-                    Text(
-                        "Good afternoon.",
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Light,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+            // --- Welcome Section ---
+            Text(
+                "Good afternoon.",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Light,
+                color = MaterialTheme.colorScheme.onSurface
+            )
 
-                    // Update Chip
-                    ui.availableUpdate?.let { asset ->
-                        Spacer(Modifier.height(16.dp))
-                        SuggestionChip(
-                            onClick = { viewModel.installUpdate() },
-                            label = { Text("Update available: ${asset.name}") },
-                            icon = { Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp)) },
-                            colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            )
-                        )
+            // Update Chip
+            ui.availableUpdate?.let { asset ->
+                Spacer(Modifier.height(16.dp))
+                SuggestionChip(
+                    onClick = { viewModel.installUpdate() },
+                    label = { Text("Update available: ${asset.name}") },
+                    icon = { Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp)) },
+                    colors = SuggestionChipDefaults.suggestionChipColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+            }
+
+            Spacer(Modifier.height(32.dp))
+
+            // --- Centered "Ask Aire" Bar ---
+            if (!ui.isPortalVisible) {
+                OutlinedTextField(
+                    value = inputText,
+                    onValueChange = { inputText = it },
+                    placeholder = { Text("Ask Aire anything...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    maxLines = 3,
+                    trailingIcon = {
+                        Row(modifier = Modifier.padding(end = 8.dp)) {
+                            IconButton(onClick = {
+                                recordAudioPermission.launch(android.Manifest.permission.RECORD_AUDIO)
+                            }) {
+                                Icon(Icons.Default.Mic, "Voice", tint = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = { viewModel.navigateTo(AppScreen.LENS) }) {
+                                Icon(Icons.Default.CameraAlt, "Lens", tint = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(
+                                onClick = {
+                                    viewModel.sendMessage(inputText)
+                                    inputText = ""
+                                },
+                                enabled = inputText.isNotBlank()
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.Send, "Send", tint = if (inputText.isNotBlank()) MaterialTheme.colorScheme.primary else Color.Gray)
+                            }
+                        }
                     }
+                )
+            } else {
+                Spacer(Modifier.height(64.dp))
+            }
 
-                    Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(48.dp))
 
-                    // --- Centered "Ask Aire" Bar ---
-                    OutlinedTextField(
-                        value = inputText,
-                        onValueChange = { inputText = it },
-                        placeholder = { Text("Ask Aire anything...") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.extraLarge,
-                        maxLines = 3,
-                        trailingIcon = {
-                            Row(modifier = Modifier.padding(end = 8.dp)) {
-                                IconButton(onClick = {
-                                    recordAudioPermission.launch(android.Manifest.permission.RECORD_AUDIO)
-                                }) {
-                                    Icon(Icons.Default.Mic, "Voice", tint = MaterialTheme.colorScheme.primary)
-                                }
-                                IconButton(onClick = { viewModel.navigateTo(AppScreen.LENS) }) {
-                                    Icon(Icons.Default.CameraAlt, "Lens", tint = MaterialTheme.colorScheme.primary)
-                                }
-                                IconButton(
-                                    onClick = {
-                                        viewModel.sendMessage(inputText)
-                                        inputText = ""
-                                    },
-                                    enabled = inputText.isNotBlank()
-                                ) {
-                                    Icon(Icons.AutoMirrored.Filled.Send, "Send", tint = if (inputText.isNotBlank()) MaterialTheme.colorScheme.primary else Color.Gray)
-                                }
-                            }
-                        }
+            // --- Recent Memories Section ---
+            if (records.isNotEmpty() && !ui.isPortalVisible) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        "Recent History",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.outline
                     )
-
-                    Spacer(Modifier.height(48.dp))
-
-                    // --- Recent Memories Section ---
-                    if (records.isNotEmpty()) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                "Recent History",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.outline
-                            )
-                            Spacer(Modifier.height(16.dp))
-                            
-                            records.take(3).forEach { record ->
-                                RecentItem(record) {
-                                    viewModel.navigateTo(AppScreen.VAULT)
-                                }
-                                Spacer(Modifier.height(12.dp))
-                            }
+                    Spacer(Modifier.height(16.dp))
+                    
+                    records.take(3).forEach { record ->
+                        RecentItem(record) {
+                            viewModel.navigateTo(AppScreen.VAULT)
                         }
+                        Spacer(Modifier.height(12.dp))
                     }
                 }
             }
