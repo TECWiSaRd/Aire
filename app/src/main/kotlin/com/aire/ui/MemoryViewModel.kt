@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-enum class AppScreen { HOME, LENS, SETTINGS, VAULT, VOICE_MODE }
+enum class AppScreen { HOME, CHAT, LENS, SETTINGS, VAULT, VOICE_MODE }
 
 data class ChatMessage(
     val id: String = UUID.randomUUID().toString(),
@@ -180,6 +180,11 @@ class MemoryViewModel(
     fun sendMessage(text: String) {
         if (text.isBlank() && (uiState.value.capturedImage == null)) return
         
+        // Auto-navigate to chat if sending from Home
+        if (uiState.value.currentScreen == AppScreen.HOME) {
+            _uiState.update { it.copy(currentScreen = AppScreen.CHAT) }
+        }
+
         val userImage = uiState.value.capturedImage
         val userMessage = ChatMessage(text = text, image = userImage, isUser = true)
         
@@ -297,6 +302,10 @@ class MemoryViewModel(
     }
 
     fun clearError() = _uiState.update { it.copy(error = null) }
+    
+    fun clearChat() {
+        _uiState.update { it.copy(chatHistory = emptyList()) }
+    }
     
     // Settings Actions
     fun updateApiKey(key: String) = viewModelScope.launch { settings.setApiKey(key) }

@@ -34,7 +34,8 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     Crossfade(targetState = uiState.currentScreen, label = "ScreenTransition") { screen ->
                         when (screen) {
-                            AppScreen.HOME -> AssistantScreen(vm)
+                            AppScreen.HOME -> HomeScreen(vm)
+                            AppScreen.CHAT -> ChatScreen(vm)
                             AppScreen.LENS -> LensScreen(
                                 onCaptured = { vm.onImageCaptured(it) },
                                 onClose = { vm.navigateTo(AppScreen.HOME) }

@@ -5,7 +5,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
@@ -15,6 +14,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AssistantScreen(viewModel: MemoryViewModel) {
+fun ChatScreen(viewModel: MemoryViewModel) {
     val ui by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val listState = rememberLazyListState()
@@ -45,25 +45,6 @@ fun AssistantScreen(viewModel: MemoryViewModel) {
         if (isGranted) viewModel.startListening(context)
     }
 
-    val locationPermission = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        if (permissions.values.any { it }) {
-            viewModel.refreshLocation()
-        }
-    }
-
-    LaunchedEffect(ui.locationFeaturesEnabled) {
-        if (ui.locationFeaturesEnabled) {
-            locationPermission.launch(
-                arrayOf(
-                    android.Manifest.permission.ACCESS_FINE_LOCATION,
-                    android.Manifest.permission.ACCESS_COARSE_LOCATION
-                )
-            )
-        }
-    }
-
     LaunchedEffect(ui.chatHistory.size) {
         if (ui.chatHistory.isNotEmpty()) {
             listState.animateScrollToItem(ui.chatHistory.size - 1)
@@ -72,23 +53,16 @@ fun AssistantScreen(viewModel: MemoryViewModel) {
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clip(CircleShape).clickable { viewModel.navigateTo(AppScreen.VOICE_MODE) }.padding(horizontal = 8.dp)
-                    ) {
-                        Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Aire", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+            TopAppBar(
+                title = { Text("Aire Assistant") },
+                navigationIcon = {
+                    IconButton(onClick = { viewModel.navigateTo(AppScreen.HOME) }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.navigateTo(AppScreen.SETTINGS) }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
-                    }
-                    IconButton(onClick = { viewModel.navigateTo(AppScreen.VAULT) }) {
-                        Icon(Icons.Default.Dns, contentDescription = "Memories")
+                    IconButton(onClick = { viewModel.clearChat() }) {
+                        Icon(Icons.Default.DeleteSweep, contentDescription = "Clear Chat")
                     }
                 }
             )
@@ -185,7 +159,7 @@ fun AssistantScreen(viewModel: MemoryViewModel) {
                 end = 16.dp
             )
         ) {
-            items(ui.chatHistory) { message ->
+            items(ui.chatHistory, key = { it.id }) { message ->
                 ChatBubble(message, onActionClick = { action ->
                     viewModel.onActionClicked(action, message.response!!)
                 })

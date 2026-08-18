@@ -120,11 +120,11 @@ abstract class MemoryDatabase : RoomDatabase() {
                 db.execSQL("DROP TABLE IF EXISTS memories_fts")
                 db.execSQL("""
                     CREATE VIRTUAL TABLE memories_fts USING fts4(
-                        content='memories',
-                        title,
+                        content=`memories`,
                         summary,
-                        tagsJson,
-                        locationName
+                        locationName,
+                        title,
+                        tagsJson
                     )
                 """)
                 db.execSQL("INSERT INTO memories_fts(memories_fts) VALUES('rebuild')")
