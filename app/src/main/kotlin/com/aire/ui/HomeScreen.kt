@@ -30,6 +30,7 @@ import com.aire.data.HistoryRecordEntity
 fun HomeScreen(viewModel: MemoryViewModel) {
     val ui by viewModel.uiState.collectAsState()
     val history by viewModel.history.collectAsState()
+    val records by viewModel.records.collectAsState()
     val context = LocalContext.current
     
     var inputText by remember { mutableStateOf("") }
@@ -45,13 +46,24 @@ fun HomeScreen(viewModel: MemoryViewModel) {
             if (!ui.isPortalVisible) {
                 CenterAlignedTopAppBar(
                     title = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clip(CircleShape).clickable { viewModel.navigateTo(AppScreen.VOICE_MODE) }.padding(horizontal = 8.dp)
-                        ) {
-                            Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Aire", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.clip(CircleShape).clickable { viewModel.navigateTo(AppScreen.VOICE_MODE) }.padding(horizontal = 8.dp)
+                            ) {
+                                Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Aire", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                            }
+                            Text(
+                                text = "${records.size} memories",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .clickable { viewModel.navigateTo(AppScreen.VAULT) }
+                                    .padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
                         }
                     },
                     actions = {
