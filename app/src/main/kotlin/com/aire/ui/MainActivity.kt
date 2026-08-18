@@ -40,6 +40,8 @@ class MainActivity : ComponentActivity() {
                                 onClose = { vm.navigateTo(AppScreen.HOME) }
                             )
                             AppScreen.SETTINGS -> SettingsScreen(vm)
+                            AppScreen.VAULT -> VaultScreen(vm)
+                            AppScreen.VOICE_MODE -> VoiceModeScreen(vm)
                         }
                     }
                 }

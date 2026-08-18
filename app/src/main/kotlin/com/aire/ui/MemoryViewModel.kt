@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-enum class AppScreen { HOME, LENS, SETTINGS }
+enum class AppScreen { HOME, LENS, SETTINGS, VAULT, VOICE_MODE }
 
 data class ChatMessage(
     val id: String = UUID.randomUUID().toString(),
@@ -28,6 +28,7 @@ data class MemoryUiState(
     val currentScreen: AppScreen = AppScreen.HOME,
     val isThinking: Boolean = false,
     val isListening: Boolean = false,
+    val isSpeaking: Boolean = false,
     val partialTranscription: String = "",
     val isAiAvailable: Boolean = true,
     val capturedImage: Bitmap? = null,
@@ -52,11 +53,27 @@ class MemoryViewModel(
     private val integrationManager: IntegrationManager
 ) : ViewModel() {
 
+    private var voiceSynthesizer: VoiceSynthesizer? = null
+
     private val _records = dao.observeAll()
         .map { entities -> entities.map { it.toDomain() } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val records: StateFlow<List<MemoryRecord>> = _records
+
+    private val _searchResults = MutableStateFlow<List<MemoryRecord>>(emptyList())
+    val searchResults: StateFlow<List<MemoryRecord>> = _searchResults.asStateFlow()
+
+    fun searchMemories(query: String) {
+        if (query.isBlank()) {
+            _searchResults.value = emptyList()
+            return
+        }
+        viewModelScope.launch {
+            val results = dao.search(query).map { it.toDomain() }
+            _searchResults.value = results
+        }
+    }
 
     private val _uiState = MutableStateFlow(MemoryUiState())
     val uiState: StateFlow<MemoryUiState> = _uiState.asStateFlow()
@@ -178,6 +195,12 @@ class MemoryViewModel(
                     val response = assistant.interact(text, userImage, context)
                     val assistantMessage = ChatMessage(text = response.explanation, isUser = false, response = response)
                     _uiState.update { it.copy(chatHistory = it.chatHistory + assistantMessage, isThinking = false) }
+                    
+                    // If in voice mode, speak the response
+                    if (uiState.value.currentScreen == AppScreen.VOICE_MODE) {
+                        _uiState.update { it.copy(isSpeaking = true) }
+                        voiceSynthesizer?.speak(response.explanation)
+                    }
                 } else {
                     val assistantMessage = ChatMessage(text = "Please add your Anthropic API key in Settings to enable AI.", isUser = false)
                     _uiState.update { it.copy(chatHistory = it.chatHistory + assistantMessage, isThinking = false) }
@@ -212,6 +235,18 @@ class MemoryViewModel(
     private var voiceRecognizer: VoiceRecognizer? = null
 
     fun startListening(context: android.content.Context) {
+        // Initialize TTS if needed for Voice Mode
+        if (voiceSynthesizer == null) {
+            voiceSynthesizer = VoiceSynthesizer(context) {
+                // When Aire finishes speaking, optionally restart listening in Voice Mode
+                _uiState.update { it.copy(isSpeaking = false) }
+                if (uiState.value.currentScreen == AppScreen.VOICE_MODE) {
+                    voiceRecognizer?.start()
+                    _uiState.update { it.copy(isListening = true) }
+                }
+            }
+        }
+
         _uiState.update { it.copy(isListening = true, partialTranscription = "", error = null) }
         voiceRecognizer = VoiceRecognizer(
             context = context,
@@ -234,7 +269,13 @@ class MemoryViewModel(
     fun stopListening() {
         voiceRecognizer?.stop()
         voiceRecognizer = null
-        _uiState.update { it.copy(isListening = false) }
+        voiceSynthesizer?.stop()
+        _uiState.update { it.copy(isListening = false, isSpeaking = false) }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        voiceSynthesizer?.shutdown()
     }
 
     fun clearError() = _uiState.update { it.copy(error = null) }
