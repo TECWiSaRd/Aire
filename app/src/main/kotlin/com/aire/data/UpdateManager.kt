@@ -27,7 +27,8 @@ data class GitHubRelease(
 @Serializable
 data class GitHubAsset(
     val name: String,
-    val browser_download_url: String
+    val browser_download_url: String,
+    var releaseTag: String = "" // Added to keep track of tag
 )
 
 /**
@@ -45,8 +46,10 @@ class UpdateManager(private val context: Context) {
             
             // Strictly compare versions (assuming "vX.Y.Z" format)
             val latestVersion = release.tag_name.removePrefix("v")
-            if (isNewer(latestVersion, BuildConfig.VERSION_NAME)) {
-                return@withContext release.assets.find { it.name.endsWith(".apk") }
+            if (isNewer(latestVersion, "${BuildConfig.VERSION_NAME}.${BuildConfig.VERSION_CODE}")) {
+                return@withContext release.assets.find { it.name.endsWith(".apk") }?.apply { 
+                    releaseTag = release.tag_name 
+                }
             }
         } catch (e: Exception) {
             Log.e("UpdateManager", "Failed to check for updates", e)
@@ -65,7 +68,8 @@ class UpdateManager(private val context: Context) {
     }
 
     fun downloadAndInstall(asset: GitHubAsset) {
-        val fileName = "aire-update-${asset.name}.apk"
+        val extension = if (asset.name.endsWith(".apk")) "" else ".apk"
+        val fileName = "aire-update-${asset.releaseTag}-${asset.name}$extension"
         val request = DownloadManager.Request(asset.browser_download_url.toUri())
             .setTitle("Aire Update")
             .setDescription("Downloading ${asset.name}...")
@@ -78,18 +82,27 @@ class UpdateManager(private val context: Context) {
         val downloadId = downloadManager.enqueue(request)
 
         val onComplete = object : BroadcastReceiver() {
+            @SuppressLint("Range")
             override fun onReceive(context: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
                 if (id == downloadId) {
-                    installApk(downloadId)
-                    context.unregisterReceiver(this)
+                    val query = DownloadManager.Query().setFilterById(id)
+                    val cursor = downloadManager.query(query)
+                    if (cursor.moveToFirst()) {
+                        val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
+                        if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                            installApk(id)
+                            context.unregisterReceiver(this)
+                        }
+                    }
+                    cursor.close()
                 }
             }
         }
         
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(onComplete, filter, Context.RECEIVER_NOT_EXPORTED)
+            context.registerReceiver(onComplete, filter, Context.RECEIVER_EXPORTED)
         } else {
             context.registerReceiver(onComplete, filter)
         }

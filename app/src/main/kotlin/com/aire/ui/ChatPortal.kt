@@ -13,10 +13,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlin.math.sqrt
@@ -38,8 +40,10 @@ fun ChatPortal(
         label = "expansion"
     )
 
+    val density = LocalDensity.current
     val baseSize = 240.dp
-    // Scale starts small (circle) and grows to fill screen
+    val baseSizePx = with(density) { baseSize.toPx() }
+    
     val screenDiagonal = sqrt((screenWidth.value * screenWidth.value) + (screenHeight.value * screenHeight.value))
     val targetScale = (screenDiagonal / baseSize.value) * 1.2f
     val currentScale = 1f + (expansion * (targetScale - 1f))
@@ -49,37 +53,72 @@ fun ChatPortal(
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.4f * (1f - expansion)))
             .pointerInput(Unit) {
+                var gestureMaxExpansion = 0f
+                var isDragAccepted = false
+                var dragStartPoint: Offset? = null
+                
                 detectDragGestures(
-                    onDragStart = { },
+                    onDragStart = { offset -> 
+                        val centerX = size.width / 2f
+                        val centerY = size.height / 2f
+                        val distFromCenter = sqrt((offset.x - centerX) * (offset.x - centerX) + (offset.y - centerY) * (offset.y - centerY))
+                        
+                        // Only start if touch is inside the portal bubble
+                        if (distFromCenter <= (baseSizePx / 2f)) {
+                            dragStartPoint = offset
+                            gestureMaxExpansion = currentPortalExpansion
+                            isDragAccepted = true
+                        } else {
+                            dragStartPoint = null
+                            isDragAccepted = false
+                        }
+                    },
                     onDrag = { change, _ ->
+                        if (!isDragAccepted) return@detectDragGestures
+                        val start = dragStartPoint ?: return@detectDragGestures
                         change.consume()
                         
                         val currentPos = change.position
-                        val centerX = size.width / 2
-                        val centerY = size.height / 2
-                        val dist = sqrt((currentPos.x - centerX) * (currentPos.x - centerX) + (currentPos.y - centerY) * (currentPos.y - centerY))
+                        val distFromStart = sqrt((currentPos.x - start.x) * (currentPos.x - start.x) + (currentPos.y - start.y) * (currentPos.y - start.y))
                         
-                        // Dragging outward from center drives expansion
-                        val normalizedDist = ((dist - 120f) / 500f).coerceIn(0f, 1f)
-                        if (normalizedDist > currentPortalExpansion) {
-                            viewModel.setPortalExpansion(normalizedDist)
+                        // Density-aware drag range (500dp)
+                        val dragRangePx = with(density) { 500.dp.toPx() }
+                        val newExpansion = (distFromStart / dragRangePx).coerceIn(0f, 1f)
+                        
+                        if (newExpansion > gestureMaxExpansion) {
+                            gestureMaxExpansion = newExpansion
+                            viewModel.setPortalExpansion(newExpansion)
                         }
                     },
                     onDragEnd = {
-                        if (currentPortalExpansion > 0.3f) {
-                            viewModel.setPortalExpansion(1f)
-                        } else {
+                        if (isDragAccepted) {
+                            if (gestureMaxExpansion > 0.3f) {
+                                viewModel.setPortalExpansion(1f)
+                            } else {
+                                viewModel.setPortalExpansion(0f)
+                            }
+                        }
+                        gestureMaxExpansion = 0f
+                        isDragAccepted = false
+                        dragStartPoint = null
+                    },
+                    onDragCancel = {
+                        if (isDragAccepted) {
                             viewModel.setPortalExpansion(0f)
                         }
+                        gestureMaxExpansion = 0f
+                        isDragAccepted = false
+                        dragStartPoint = null
                     }
                 )
             }
             .pointerInput(Unit) {
-                var zoomAccumulator = 1f
+                var cumulativeZoom = 1f
                 detectTransformGestures { _, _, zoom, _ ->
-                    zoomAccumulator *= zoom
-                    if (zoomAccumulator < 0.7f) {
+                    cumulativeZoom *= zoom
+                    if (cumulativeZoom < 0.7f) {
                         viewModel.closePortal()
+                        cumulativeZoom = 1f // Reset after trigger
                     }
                 }
             },
@@ -103,7 +142,6 @@ fun ChatPortal(
                 Box(modifier = Modifier
                     .requiredSize(screenWidth, screenHeight)
                     .graphicsLayer {
-                        // Keep content at its target size while the bubble scales
                         scaleX = 1f / currentScale
                         scaleY = 1f / currentScale
                     }
@@ -111,7 +149,6 @@ fun ChatPortal(
                     content()
                 }
                 
-                // Show a preview overlay if the portal isn't fully open
                 if (expansion < 0.5f) {
                     val lastAssistantMessage = ui.chatHistory.lastOrNull { !it.isUser }
                     
