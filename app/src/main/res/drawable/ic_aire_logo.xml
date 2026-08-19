@@ -4,25 +4,20 @@
     android:viewportWidth="100"
     android:viewportHeight="100">
 
-    <!-- Outer Portal Ring -->
-    <path
-        android:pathData="M50,10 C72.09,10 90,27.91 90,50 C90,72.09 72.09,90 50,90 C27.91,90 10,72.09 10,50 C10,27.91 27.91,10 50,10 Z M50,18 C32.33,18 18,32.33 18,50 C18,67.67 32.33,82 50,82 C67.67,82 82,67.67 82,50 C82,32.33 67.67,18 50,18 Z"
-        android:fillColor="#6200EE"/>
-
     <!-- Dotted Wave (Primary Color) -->
-    <!-- We draw small circles along a sine wave path -->
+    <!-- Centered and expanded to span the width -->
     <path
         android:fillColor="#6200EE"
-        android:pathData="M25,45a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M35,35a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M45,40a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M55,50a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M65,65a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M75,60a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z"/>
+        android:pathData="M10,50a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M25,35a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M40,40a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M55,60a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M70,75a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M85,60a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z"/>
 
     <!-- Dotted Wave (Secondary Color / Offset) -->
     <path
         android:fillColor="#BB86FC"
-        android:pathData="M25,55a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M35,45a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M45,50a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M55,60a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M65,75a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M75,70a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z"/>
+        android:pathData="M10,65a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M25,50a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M40,55a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M55,75a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M70,90a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M85,75a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z"/>
 
     <!-- Dotted Wave (Primary Color / Third layer) -->
     <path
         android:fillColor="#6200EE"
-        android:pathData="M25,50a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M35,40a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M45,45a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M55,55a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M65,70a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z M75,65a2,2 0 1,1 4,0a2,2 0 1,1 -4,0z"/>
+        android:pathData="M10,35a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M25,20a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M40,25a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M55,45a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M70,60a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M85,45a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z"/>
 
 </vector>
