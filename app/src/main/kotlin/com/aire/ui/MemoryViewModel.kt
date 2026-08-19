@@ -146,18 +146,26 @@ class MemoryViewModel(
         _uiState.update { it.copy(currentScreen = screen) }
     }
 
+    private var portalCompletionJob: kotlinx.coroutines.Job? = null
+
     fun setPortalExpansion(progress: Float) {
         _uiState.update { it.copy(portalExpansion = progress) }
         if (progress >= 1f) {
-            viewModelScope.launch {
+            portalCompletionJob?.cancel()
+            portalCompletionJob = viewModelScope.launch {
                 // Smooth transition: give the animation a moment to finish before switching screens
                 kotlinx.coroutines.delay(100)
-                _uiState.update { it.copy(currentScreen = AppScreen.CHAT, isPortalVisible = false, portalExpansion = 0f) }
+                // Only switch if we're still at 100% expansion and not cancelled
+                if (uiState.value.portalExpansion >= 1f) {
+                    _uiState.update { it.copy(currentScreen = AppScreen.CHAT, isPortalVisible = false, portalExpansion = 0f) }
+                }
             }
         }
     }
 
     fun closePortal() {
+        portalCompletionJob?.cancel()
+        portalCompletionJob = null
         _uiState.update { it.copy(isPortalVisible = false, portalExpansion = 0f, currentScreen = AppScreen.HOME) }
     }
 
@@ -215,12 +223,14 @@ class MemoryViewModel(
     }
 
     fun sendMessage(text: String) {
-        android.util.Log.d("MemoryViewModel", "sendMessage: $text")
-        if (text.isBlank() && (uiState.value.capturedImage == null)) return
+        val messageText = if (text.isBlank() && (uiState.value.capturedImage != null)) "Image conversation" else text
+        android.util.Log.d("MemoryViewModel", "sendMessage event triggered with length: ${messageText.length}")
+        
+        if (messageText.isBlank() && (uiState.value.capturedImage == null)) return
         
         val isFromHome = uiState.value.currentScreen == AppScreen.HOME
         val userImage = uiState.value.capturedImage
-        val userMessage = ChatMessage(text = text, image = userImage, isUser = true)
+        val userMessage = ChatMessage(text = messageText, image = userImage, isUser = true)
         
         // Reset chat history and trigger portal if sending from Home
         if (isFromHome) {
@@ -229,7 +239,7 @@ class MemoryViewModel(
             // Save to persistent History
             viewModelScope.launch {
                 dao.insertHistory(HistoryRecordEntity(
-                    title = text.take(30) + if (text.length > 30) "..." else "",
+                    title = messageText.take(30) + if (messageText.length > 30) "..." else "",
                     summary = "Conversational interaction",
                     timestamp = System.currentTimeMillis()
                 ))
@@ -254,9 +264,10 @@ class MemoryViewModel(
 
         viewModelScope.launch {
             try {
-                // Ensure we get the latest key
-                val apiKey = settings.anthropicApiKey.filterNotNull().first()
-                if (!apiKey.isBlank()) {
+                // Ensure we get the latest key, but don't wait indefinitely if none exists
+                val apiKey = settings.anthropicApiKey.firstOrNull()
+                
+                if (!apiKey.isNullOrBlank()) {
                     val config = ClaudeConfig(
                         useProxy = false,
                         proxyBaseUrl = "",
@@ -268,7 +279,7 @@ class MemoryViewModel(
                     val assistant = AssistantService(client, config.model)
                     
                     val context = buildAssistantContext()
-                    val response = assistant.interact(text, userImage, context)
+                    val response = assistant.interact(messageText, userImage, context)
                     
                     val assistantMessage = ChatMessage(text = response.explanation, isUser = false, response = response)
                     _uiState.update { it.copy(
@@ -281,6 +292,9 @@ class MemoryViewModel(
                     _uiState.update { it.copy(chatHistory = it.chatHistory + assistantMessage, isThinking = false) }
                 }
             } catch (t: Throwable) {
+                // Preserve coroutine cancellation
+                if (t is kotlinx.coroutines.CancellationException) throw t
+                
                 android.util.Log.e("MemoryViewModel", "AI Error", t)
                 val errorMessage = ChatMessage(text = "Error: ${t.message}", isUser = false)
                 _uiState.update { it.copy(chatHistory = it.chatHistory + errorMessage, isThinking = false, error = t.friendlyMessage()) }

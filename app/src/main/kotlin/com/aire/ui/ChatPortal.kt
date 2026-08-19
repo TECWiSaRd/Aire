@@ -89,8 +89,7 @@ fun ChatPortal(
                     scaleY = currentScale
                     alpha = 1f
                 }
-                .clip(RoundedCornerShape(currentCornerRadius))
-                .clickable { viewModel.setPortalExpansion(1f) },
+                .clip(RoundedCornerShape(currentCornerRadius)),
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 8.dp,
             shadowElevation = 12.dp
@@ -119,14 +118,22 @@ fun ChatPortal(
                         modifier = Modifier
                             .fillMaxSize()
                             .alpha(overlayAlpha)
-                            .background(MaterialTheme.colorScheme.surface),
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(32.dp)
+                            .clickable(
+                                onClickLabel = "Open chat"
+                            ) { 
+                                if (ui.portalExpansion == 0f) {
+                                    viewModel.setPortalExpansion(1f) 
+                                }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.padding(32.dp)
                         ) {
-                            if (ui.isThinking && (lastAssistantMessage == null)) {
+                            if (ui.isThinking) {
                                 CircularProgressIndicator(modifier = Modifier.size(48.dp))
                                 Spacer(Modifier.height(16.dp))
                                 Text("Aire is thinking...", style = MaterialTheme.typography.bodyMedium)
@@ -182,7 +189,7 @@ fun ChatPortal(
                         val dy = centroid.y - centerY
                         val dist = sqrt(dx * dx + dy * dy)
                         
-                        val hitRadius = baseSizePx * 0.7f
+                        val hitRadius = baseSizePx * 1.2f
                         if (dist >= hitRadius || currentPortalExpansion > 0f) {
                             val startRange = baseSizePx / 2f
                             val endRange = size.width * 0.45f

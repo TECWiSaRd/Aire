@@ -51,7 +51,8 @@ fun HistoryScreen(viewModel: MemoryViewModel) {
             ) {
                 items(history) { record ->
                     HistoryItem(record) {
-                        // For now, just a placeholder click
+                        // Support for re-opening chats is planned for a future update
+                        android.util.Log.d("HistoryScreen", "History item selected: ${record.id}")
                     }
                 }
             }

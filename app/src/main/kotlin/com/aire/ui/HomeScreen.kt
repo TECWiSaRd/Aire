@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import com.aire.R
@@ -203,6 +204,7 @@ fun HomeScreen(viewModel: MemoryViewModel) {
 
 @Composable
 fun HistorySwipeBar(latestHistory: HistoryRecordEntity?, onSwipeUp: () -> Unit) {
+    val density = LocalDensity.current
     var offsetY by remember { mutableStateOf(0f) }
 
     Surface(
@@ -211,13 +213,13 @@ fun HistorySwipeBar(latestHistory: HistoryRecordEntity?, onSwipeUp: () -> Unit) 
             .navigationBarsPadding()
             .padding(horizontal = 24.dp, vertical = 16.dp)
             .height(80.dp)
-            .offset(y = offsetY.dp)
+            .offset(y = with(density) { offsetY.toDp() })
             .pointerInput(Unit) {
                 detectVerticalDragGestures(
                     onVerticalDrag = { change, dragAmount ->
                         change.consume()
                         offsetY = (offsetY + dragAmount).coerceAtMost(0f)
-                        if (offsetY < -100f) {
+                        if (offsetY < -300f) { // Threshold in pixels
                             onSwipeUp()
                             offsetY = 0f
                         }
@@ -226,7 +228,11 @@ fun HistorySwipeBar(latestHistory: HistoryRecordEntity?, onSwipeUp: () -> Unit) 
                         offsetY = 0f
                     }
                 )
-            },
+            }
+            .clickable(
+                onClickLabel = "Open chat history",
+                onClick = onSwipeUp
+            ),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         shape = RoundedCornerShape(24.dp),
         tonalElevation = 2.dp

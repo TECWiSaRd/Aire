@@ -81,7 +81,7 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/DEPENDENCIES"
-            excludes += "/META-INF/FastDoubleParser-LICENSE"
+            pickFirst("/META-INF/FastDoubleParser-LICENSE")
         }
     }
 }

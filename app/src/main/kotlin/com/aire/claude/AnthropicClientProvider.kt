@@ -11,7 +11,7 @@ data class ClaudeConfig(
     val proxyBaseUrl: String,
     val directApiKey: String,
     val proxyAuthToken: String,
-    val model: String = "claude-3-5-haiku-latest"
+    val model: String = "claude-haiku-4-5"
 ) {
     /** Whether the configuration has enough credentials to attempt an AI call. */
     val isConfigured: Boolean = if (useProxy) proxyBaseUrl.isNotBlank() else directApiKey.isNotBlank()
