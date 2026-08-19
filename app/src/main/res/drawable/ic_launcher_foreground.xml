@@ -4,18 +4,18 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Dotted Wave (Primary Color) - Tighter and centered for safe zone -->
+    <!-- Dotted Wave (Primary Color) - Shifted left for better visual balance -->
     <path
         android:fillColor="#6200EE"
-        android:pathData="M28,54a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M38,44a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M48,48a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M58,60a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M68,72a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M78,60a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z"/>
+        android:pathData="M23,54a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M33,44a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M43,48a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M53,60a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M63,72a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M73,60a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z"/>
 
     <!-- Dotted Wave (Secondary Color) -->
     <path
         android:fillColor="#BB86FC"
-        android:pathData="M28,64a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M38,54a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M48,58a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M58,70a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M68,82a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M78,70a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z"/>
+        android:pathData="M23,64a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M33,54a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M43,58a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M53,70a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M63,82a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M73,70a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z"/>
 
     <!-- Dotted Wave (Primary Color Layer 3) -->
     <path
         android:fillColor="#6200EE"
-        android:pathData="M28,44a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M38,34a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M48,38a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M58,50a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M68,62a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M78,50a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z"/>
+        android:pathData="M23,44a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M33,34a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M43,38a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M53,50a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M63,62a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z M73,50a3,3 0 1,1 6,0a3,3 0 1,1 -6,0z"/>
 </vector>
