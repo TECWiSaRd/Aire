@@ -1,0 +1,25 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+
+    <!-- Outer Portal Ring -->
+    <path
+        android:pathData="M50,10 C72.09,10 90,27.91 90,50 C90,72.09 72.09,90 50,90 C27.91,90 10,72.09 10,50 C10,27.91 27.91,10 50,10 Z M50,18 C32.33,18 18,32.33 18,50 C18,67.67 32.33,82 50,82 C67.67,82 82,67.67 82,50 C82,32.33 67.67,18 50,18 Z"
+        android:fillColor="#6200EE"/>
+
+    <!-- Stylized "A" (Fluid / Ethereal) -->
+    <path
+        android:pathData="M50,30 L35,70 L42,70 L50,50 L58,70 L65,70 Z M50,42 L46,62 L54,62 Z"
+        android:fillColor="#6200EE"/>
+
+    <!-- Atmosphere / Breeze Detail -->
+    <path
+        android:pathData="M30,50 C30,40 40,35 50,35 C60,35 70,40 70,50"
+        android:strokeWidth="2"
+        android:strokeColor="#BB86FC"
+        android:strokeLineCap="round"/>
+
+</vector>
